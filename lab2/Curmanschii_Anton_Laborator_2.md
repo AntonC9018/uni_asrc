@@ -5,10 +5,6 @@ A elaborat: **Curmanschii Anton, IA1901.**
 Tema: **Securizarea routerului pentru acces administrativ.**
 
 
-## Obiectivele
-
-
-
 ## Partea 1: Configurare de bază a dispozitivului de rețea
 
 
@@ -256,6 +252,55 @@ Approximate round trip times in milli-seconds:
 - Configurați securitatea de conectare virtuală îmbunătățită. 
 - Configurați un server SSH pe un router. 
 - Configurați un client SSH și verificați conectivitatea. 
+
+
+[Sintaxa enable password și enable secret](https://pediaa.com/what-is-the-difference-between-enable-password-and-enable-secret/).
+
+[Diferența între enable password și enable secret, best practices](https://community.cisco.com/t5/networking-documents/understanding-the-differences-between-the-cisco-password-secret/ta-p/3163238).
+
+[Comenzile de bază](https://w7cloud.com/packet-tracer-cisco-commands-list-cli-basic/).
+
+[Despre nivelurile de privilegii](https://www.oreilly.com/library/view/hardening-cisco-routers/0596001665/ch04.html#hardcisco-CHP-4-SECT-7).
+
+Deci, sumarizez:
+
+- Se utilizează comanda `enable secret` pentru a pune parola la accesarea device-ului. 
+  Implicit, routerele nu sunt parolate, adică pot fi accesate fără parolă.
+- Există mai multe tipuri de stocare a parolelor, cele mai sigure metode fiind Type 6 care utilizează criptarea simetrică cu AES-128 cu o cheie master, Type 8 și Type 9 folosesc funcții hash criptografice unidirecționale pe mai multe runde.
+- `enable password` este o metodă deprecată de setarea parolelor.
+- Routeri au 16 niveluri de privilegii cu permisiuni configurabile. 
+  Implicit, sunt accesibile doar nivelurile 0, 1 și 15. 
+  În Cisco Packet Tracer însă pare că nu putem accesa nivelul 0, deoarece accesul minim este 1.
+  Poate fi că dacă punem parola la nivelul 1, îl vom putea accesa implicit.
+  Folosim comanda `enable LEVEL_NUMBER` pentru a ne escala nivelul curent de privilegii la nivelul indicat.
+
+Vom face cel mai simplu lucru — vom seta o singură parolă pentru nivelul de privilegii 15 la toate routere.
+Este clar că trebuie să indicăm parole puternice într-un sistem real, însă aici ca să nu încurcăm parolele, vom pune parola simplă "1111".
+
+
+Următoarea comandă setează parola 1111 la nivelul cel mai elevat de privilegii, utilizând metoda implicită de criptare (Type 5, SHA-256). [Documentația](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/security/d1/sec-d1-cr-book/sec-cr-e1.html#wp3438133060).
+
+```
+enable secret level 15 1111
+```
+
+Acum ne scoatem privilegiile, după ce ne intoarcem la nivelul privilegiat 15.
+```
+# disable
+
+> enable
+Password: 1111
+
+# show privilege
+Current privilege level is 15
+```
+
+Unica problema cu setarea tipului de stocare a parolelor (a tipului de criptare) este că trebuie să intoducem parola deja criptată, ceea ce nu-i tare comod.
+Pentru a seta o parolă cu o metodă de criptare specifică dar trebuie să folosim un program aparte, deoarece router-ul nu poate face acest lucru implicit, dintr-o oarecare cauză.
+Probabil există o comandă care pur și simplu face criptarea, dar eu nu o pot găsi.
+
+Deci în continuare setăm în modul indicat mai sus parole la toate routerele.
+
 
 
 ## Partea 3: Configurarea rolurilor administrative 
