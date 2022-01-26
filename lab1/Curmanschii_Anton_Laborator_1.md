@@ -115,10 +115,10 @@ Există instumente care permit automatizarea spargerii de așa sisteme prin inje
 Exemplu: o pagină web poate arăta informații despre cărți după un anumit identificator, primit ca parametru în URL.
 De exemplu `https://books.example.com/bookinfo?id=2` ar executa interogarea SQL `select * from BookInfo where id=2`, și utilizatorul ar vedea informații despre carte sugerată în cazul în care interogare reușește.
 Acum, hacker-ul dă `https://books.example.com/bookinfo?id=2 and 1=1`, de unde serverul extrage că id-ul este `2 and 1=1` și construiește interogarea `select * from BookInfo where id=5 and 1=1`.
-Dacă pagina arată ca rezultat informații despre o altă carte, atunci șirul cerut de el a trecut validarea cu succes și serverul este vulnerabil la injecții SQL.
+Dacă pagina arată ca rezultat informații despre o altă carte, atunci șirul cerut de atacator a trecut validarea cu succes, și serverul este vulnerabil la injecții SQL.
 
-Acum atacatorul poate de exemplu folosi interogări mai complexe pentru a afla mai multe informații despre server.
-De exemplu, atacatorul poate face un binary search pe versiuni, utilizând URL-ul `https://books.example.com/bookinfo?id=5 and substring(@@version, 1, INSTR(@@version, '.') - 1)<X`, unde X să fie un număr întreg. 
+Acum atacatorul poate, de exemplu, folosi unele interogări mai complexe pentru a afla mai multe informații despre server.
+De exemplu, atacatorul poate face un binary search pe versiuni, utilizând URL-ul `https://books.example.com/bookinfo?id=5 and substring(@@version, 1, INSTR(@@version, '.') - 1) < X`, unde X să fie un număr întreg. 
 
 
 ### Injecție SQL de ordinul 2
@@ -138,7 +138,7 @@ Scanerele automate de securitate a aplicațiilor web nu ar putea detecta cu ușu
 - Să se utlizeze altceva decât șiruri pentru parametrizarea interogărilor.
 
 
-### Exemplele
+### Exemple
 
 Vedeți o listă de exemple [aici](https://www.wikiwand.com/en/SQL_injection#/Examples).
 
