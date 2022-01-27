@@ -264,9 +264,9 @@ Approximate round trip times in milli-seconds:
 
 Deci, sumarizez:
 
-- Se utilizează comanda `enable secret` pentru a pune parola la accesarea device-ului. 
+- Se utilizează comanda `enable secret` pentru a pune parola la accesarea unui anumit nivel de privilegii al device-ului. 
   Implicit, routerele nu sunt parolate, adică pot fi accesate fără parolă.
-- Există mai multe tipuri de stocare a parolelor, cele mai sigure metode fiind Type 6 care utilizează criptarea simetrică cu AES-128 cu o cheie master, Type 8 și Type 9 folosesc funcții hash criptografice unidirecționale pe mai multe runde.
+- Există mai multe tipuri de stocare a parolelor, cele mai sigure metode fiind Type 6 care utilizează criptarea simetrică cu AES-128 cu o cheie master, sau Type 8 și Type 9 care folosesc funcții hash criptografice unidirecționale pe mai multe runde.
 - `enable password` este o metodă deprecată de setarea parolelor.
 - Routeri au 16 niveluri de privilegii cu permisiuni configurabile. 
   Implicit, sunt accesibile doar nivelurile 0, 1 și 15. 
@@ -286,21 +286,62 @@ enable secret level 15 1111
 
 Acum ne scoatem privilegiile, după ce ne intoarcem la nivelul privilegiat 15.
 ```
-# disable
+R1# disable
 
-> enable
+R1> enable
 Password: 1111
 
-# show privilege
+R1# show privilege
 Current privilege level is 15
 ```
 
-Unica problema cu setarea tipului de stocare a parolelor (a tipului de criptare) este că trebuie să intoducem parola deja criptată, ceea ce nu-i tare comod.
+Unica problema cu setarea tipului de stocare a parolelor (a tipului de criptare) este că trebuie să introducem parola deja criptată, ceea ce nu-i tare comod.
 Pentru a seta o parolă cu o metodă de criptare specifică dar trebuie să folosim un program aparte, deoarece router-ul nu poate face acest lucru implicit, dintr-o oarecare cauză.
 Probabil există o comandă care pur și simplu face criptarea, dar eu nu o pot găsi.
 
 Deci în continuare setăm în modul indicat mai sus parole la toate routerele.
 
+> Configurați un banner de avertizare de conectare.
+
+<!-- [Informații despre Cisco Banner](https://www.manageengine.com/network-configuration-manager/configlets/configure-banner-cisco.html). -->
+
+[Documentația](https://www.cisco.com/en/US/docs/ios/security/command/reference/sec_cr_book.pdf#page=380&zoom=auto,-91,718).
+
+[Despre Telnet](https://www.wikiwand.com/en/Telnet). Telnet este un protocol de comunicare bidirecțională orientată pe text. Este un protocol veșnic, nesecurizat: mesajele sunt transmise în canal public și nu sunt criptate. A fost înlocuit cu [SSH](https://www.wikiwand.com/en/Secure_Shell). SSH criptează toate mesajele, protejând confidențialitatea comunicațiilor și datele sensitive.
+
+Banner - este textul arătat utilizatorului când are loc o conectare la distanță de la host-ul utilizatorului la server.
+În cazul nostru, router-ul joacă rolul serverului, iar unul din calculătoare este host.
+De obicei pentru acest lucru se folosește protocolul SSH.
+Deci înainte de a-l putea vedea pe acest banner setat, vom trebui să configurăm protocolul SSH pe router.
+
+Am accesat informația din [acest document](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf) care dă instrucțiuni și informații exhaustive referitor la aceste lucruri.
+[Ghid pentru implementarea securității cu parolele, login-urile pentru sesiunile CLI](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=3075&zoom=180,65,616).
+
+Pentru un test rapid vom configura Telnet, deoarece SSH trebuie mai mult setup.
+Pentru a configura Telnet pentru sesiuni la distanță, folosesc următoarele comenzi:
+```
+R1> enable
+R1# configure terminal
+R1(config)# line vty 0 4
+R1(config-line)# password 1111
+R1(config-line)# end
+```
+<!-- [VTY (virtual teletype)](https://ipwithease.com/what-is-meaning-of-line-vty-0-4-in-configuration-of-cisco-router-or-switch/) este portul care permite aplicarea protocoalelor Telnet și SSH. -->
+
+Următorul mesaj va fi arătat la login.
+
+```
+R1# configure terminal
+R1(config)# banner login &Glad to see you here, user!&
+```
+
+Acum ne conectăm la router R1 de la calculator PC-C, folosind Telnet.
+
+![small Deschidem aplicația Telnet / SSH Client](images/part2/telnet_ssh_client_application.png)
+
+![Introducem adresa unei interfețe a routerului](images/part2/telnet_connection_configuration.png)
+
+![Vedem banner-ul nostru](images/part2/telnet_login_banner.png)
 
 
 ## Partea 3: Configurarea rolurilor administrative 
