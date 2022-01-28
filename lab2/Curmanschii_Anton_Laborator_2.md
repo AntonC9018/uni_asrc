@@ -344,6 +344,58 @@ Acum ne conectăm la router R1 de la calculator PC-C, folosind Telnet.
 ![Vedem banner-ul nostru](images/part2/telnet_login_banner.png)
 
 
+> Configurați securitatea îmbunătățită a parolei utilizatorului.
+
+Implicit, toate parolele sunt stocate în text clar (cu excepția parolei `enable secret`).
+Un atacator ar putea să le găsească în rundown-ul configurării și să le fure:
+
+```
+R1> enable
+Password: 1111
+R1# show run | include password
+no service password-encryption
+ password 1111
+```
+
+Chiar dacă nu are parola de `enable secret`, poate descărca fișierul de configurație și poate să le găsescă în acel fișier, analizându-l cu un program.
+
+Putem folosi serviciul `service password-encryption` pentru a cripta parolele.
+Însă, acest serviciu folosește cifrul slab Vigenere care poate fi spart aproape imediat de un program specializat.
+Iată, de exemplu, [cracker-ul oficial](https://www.firewall.cx/cisco-technical-knowledgebase/cisco-routers/358-cisco-type7-password-crack.html) produs de Cisco singuri.
+
+```
+R1# configure terminal
+R1(config)# service password-encryption
+R1(config)# end
+```
+
+Acum dacă arătăm `show run`, vedem că parola a fost cifrată cu metoda 7 (Vigenere).
+
+```
+R1# show run | include password
+service password-encryption
+ password 7 08701D1F58
+```
+
+Referitor la parolele utilizatorilor, acestea trebuie fi introduse deja criptate individual atunci când se crează parola, pe lângă tipul numeric al criptării.
+Iarăși, cum s-a menționat anterior, această metodă nu este comodă, deoarece necesită criptarea aparte, cu toate este clar că poate fi realizată direct în router cu parola clară ca input.
+Poate există o metodă, dar eu nu o pot găsi.
+
+<!-- Presupun că putem schimba metoda aceasta în timpul setării acestei parole, dar pare că nu am dreptate.
+```
+R1#config termina
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)#line vty 0 4
+R1(config-line)#no password
+R1(config-line)#password ?
+  7     Specifies a HIDDEN password will follow
+  LINE  The UNENCRYPTED (cleartext) line password
+R1(config-line)#password 1111
+R1(config-line)#end
+``` -->
+
+
+
 ## Partea 3: Configurarea rolurilor administrative 
 
 **Obiectivele:**
