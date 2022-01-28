@@ -301,7 +301,7 @@ Probabil există o comandă care pur și simplu face criptarea, dar eu nu o pot 
 
 Deci în continuare setăm în modul indicat mai sus parole la toate routerele.
 
-> Configurați un banner de avertizare de conectare.
+### Configurați un banner de avertizare de conectare.
 
 <!-- [Informații despre Cisco Banner](https://www.manageengine.com/network-configuration-manager/configlets/configure-banner-cisco.html). -->
 
@@ -344,7 +344,7 @@ Acum ne conectăm la router R1 de la calculator PC-C, folosind Telnet.
 ![Vedem banner-ul nostru](images/part2/telnet_login_banner.png)
 
 
-> Configurați securitatea îmbunătățită a parolei utilizatorului.
+### Configurați securitatea îmbunătățită a parolei.
 
 Implicit, toate parolele sunt stocate în text clar (cu excepția parolei `enable secret`).
 Un atacator ar putea să le găsească în rundown-ul configurării și să le fure:
@@ -377,10 +377,6 @@ service password-encryption
  password 7 08701D1F58
 ```
 
-Referitor la parolele utilizatorilor, acestea trebuie fi introduse deja criptate individual atunci când se crează parola, pe lângă tipul numeric al criptării.
-Iarăși, cum s-a menționat anterior, această metodă nu este comodă, deoarece necesită criptarea aparte, cu toate este clar că poate fi realizată direct în router cu parola clară ca input.
-Poate există o metodă, dar eu nu o pot găsi.
-
 <!-- Presupun că putem schimba metoda aceasta în timpul setării acestei parole, dar pare că nu am dreptate.
 ```
 R1#config termina
@@ -394,7 +390,73 @@ R1(config-line)#password 1111
 R1(config-line)#end
 ``` -->
 
+### Configurarea parolelor utilizatorilor
 
+Ca să putem proceda cu criptarea parolelor utilizatorilor, trebuie la început să configurăm conturile utilizatorilor.
+Vom folosi [următorul ghid](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=3099&zoom=180,31,425).
+
+Utilizez comanda `username`. Parola implicit este criptată utilizând algoritmul MD5.
+
+```
+R1(config)# username admin privilege 15 secret 1111
+R1(config)# end
+R1# show run | include secret
+enable secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
+username admin privilege 15 secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
+```
+
+Dacă se dorește ca parolele să fie criptate utilizând un algoritm diferit decât cel implicit, ele trebuie fi introduse deja criptate individual atunci când se crează parola, pe lângă tipul numeric al criptării.
+Iarăși, cum s-a menționat anterior, această metodă nu este comodă, deoarece necesită criptarea aparte, cu toate este clar că poate fi realizată direct în router cu parola clară ca input.
+Poate există o metodă, dar eu nu o pot găsi.
+
+Asemănător, putem crea un cont pentru un utilizator de nivelul privilegiat, zicem, 7, dar din punct de vedere al privilegiilor el ar fi la nivelul user, adică nivelul de privilegii 1.
+Aceasta înseamnă că ar putea utiliza doar comenzile nivelului 1 (un set foarte mic de comenzi).
+Ca să facem acest nivel 7 de privilegii semnificativ, trebuie să mișcăm nivelul necesar pentru executarea unelor comenzi de la nivelul 15 la nivelul 7, ca acel utilizator de nivel 7 să aibă vreun avantaj asupra nivelului 1.
+Aceasta o voi face în [partea 3](#partea-3-configurarea-rolurilor-administrative).
+
+
+### Configurarea SSH
+
+Ca să putem configura SSH, 
+<!-- avem nevoie de un CA (Certification Authority) care să distribuie certificate digitale, iar pentru crearea certificatelor  -->
+avem nevoie de o pereche de chei RSA.
+Prin urmare, generez o pereche de chei după modulul pe 1024 de biți.
+
+> Pentru securitate, se recomandă să se folosească cheile după modulul pe 1024 de biți, dar atunci și generarea lor va lua mai mult timp.
+> Pentru serveri CA se recomandă lungimea de 2048 de biți.  
+
+```
+R1# configure terminal
+R1(config)# crypto key generate rsa general-keys modulus 1024
+% Please define a domain-name first.
+```
+
+Deci la început trebuie să setăm numele domenului.
+`ip domain name` permite stabilirea partei finale a domeniului organizației.
+De exemplu, am specificat `anton.com`.
+Înainte ca adresa să fie rezolvată de serverul DNS, dacă nu este qualificată întreg, la ea se adaugă acest șir numelui domeniului.
+De exemplu, dacă utilizatorul solicită adresa `servername` în browser, router-ul o va mapa la `servername.anton.com`, după ce va face interogarea DNS. [Informații](https://community.cisco.com/t5/other-network-architecture/ip-domain-list/td-p/614646).
+
+> Există versiunea acestei comenzi care permite generarea cheilor SSH numite, folosind opțiunea label.
+> Însă această funcționalitate [a fost adăugată în versiunea 12.2(8)T](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/security/a1/sec-a1-xe-3se-3850-cr-book/sec-a1-xe-3se-3850-cr-book_chapter_0110.pdf#page=3&zoom=auto,-91,545), pe când în Cisco packet tracer avem versiunea 12.2.
+> De aceea, pentru a genera o pereche de chei RSA, totuși trebuie să configurăm `ip domain name`.
+
+```
+R1(config)# ip domain name anton.com
+```
+
+În cazul nostru însă nu avem nici un server DNS, nici local, nici un server global de pe Internet, deci putem stinge opțiunea de DNS lookup pe router (comanda `no ip domain lookup`).
+<!-- Încă am putea scoate opțiunea `ip domain name` după ce am generat o pereche de chei și am renumit-o. -->
+
+```
+R1(config)# no ip domain lookup
+R1(config)# crypto key generate rsa general-keys modulus 1024 
+The name for the keys will be: R1.anton.com
+
+% The key modulus size is 1024 bits
+% Generating 1024 bit RSA keys, keys will be non-exportable...[OK]
+*Mar 1 1:38:49.122: %SSH-5-ENABLED: SSH 1.99 has been enabled
+```
 
 ## Partea 3: Configurarea rolurilor administrative 
 

@@ -6,8 +6,8 @@ void main()
     writeln("\nDiffie-Hellman (matrix)");
     diffieHellmanMatrix();
 
-    writeln("\n");
-    bool shouldGenerateNumbersRandomly = false;
+    writeln("\nBlom");
+    bool shouldGenerateNumbersRandomly = true;
     blom(shouldGenerateNumbersRandomly);
 }
 
@@ -192,7 +192,7 @@ void blom(bool shouldGenerateNumbersRandomly)
     // g(x) = f(x, r_u)
     // Coefficients sent to each user.
     // Contains n*k entries, k entries for each user's random number.
-    const ulong[2][] gs_coefficients = 
+    const ulong[2][] gs_coefficients = // g(x) = f(x, r_1)
     (){
         auto result = new ulong[2][](n * k);
         foreach (index, randomNumber; randomNums)
@@ -215,6 +215,7 @@ void blom(bool shouldGenerateNumbersRandomly)
 
 
     // Evaluates a given g(x).
+    // g(r_2) = f(r_2, r_1) 
     auto calculatePrivateKey(ulong[2] g_coefficients, ulong otherNumber)
     {
         // a + b(x + y) + cxy = a + by + (b + cy) x
