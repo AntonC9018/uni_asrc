@@ -27,9 +27,12 @@ img[alt^="small"]
 [DTE](https://www.wikiwand.com/en/Data_terminal_equipment),
 [DCE](https://www.wikiwand.com/en/Data_circuit-terminating_equipment).
 
+> Avertizarea pentru studenții care utilizează lucrarea mea ca referință!
+> Nu utilizați routerele PT-Empty, deoarece versiunea OS-ului pe ele este învechită, și nu suportă funcțiile care se cere să ilustrați în această lucrare de laborator. 
+> Utilizați un router cu versiunea OS-ului mai nouă, ca, de exemplu, modelul 4331.
 
 Am început cu routere și switch-uri vide (Empty).
-Am adăugat la ele acele porturi de care avem nevoie pentru funcționarea corectă a sistemei.
+Am adăugat în ele acele module cu acele porturi de care avem nevoie pentru funcționarea corectă a sistemei.
 
 - În R1 și în R3 am pus câte un modul **1CFE** (admite o singură conexiune Ethernet) și câte un modul **1SS** (admite o singură conexiune serială).
 - În R2 am pus două module **1SS**.
@@ -296,7 +299,7 @@ Current privilege level is 15
 ```
 
 Unica problema cu setarea tipului de stocare a parolelor (a tipului de criptare) este că trebuie să introducem parola deja criptată, ceea ce nu-i tare comod.
-Pentru a seta o parolă cu o metodă de criptare specifică dar trebuie să folosim un program aparte, deoarece router-ul nu poate face acest lucru implicit, dintr-o oarecare cauză.
+Pentru a seta o parolă cu o metodă de criptare specifică dar trebuie să folosim un program aparte pentru a cripta textul clar, deoarece router-ul nu poate face acest lucru implicit, dintr-o oarecare cauză.
 Probabil există o comandă care pur și simplu face criptarea, dar eu nu o pot găsi.
 
 Deci în continuare setăm în modul indicat mai sus parole la toate routerele.
@@ -335,7 +338,7 @@ R1# configure terminal
 R1(config)# banner login &Glad to see you here, user!&
 ```
 
-Acum ne conectăm la router R1 de la calculator PC-C, folosind Telnet.
+Acum ne conectăm la router R1 de pe calculatorul PC-C, folosind Telnet.
 
 ![small Deschidem aplicația Telnet / SSH Client](images/part2/telnet_ssh_client_application.png)
 
@@ -395,7 +398,7 @@ R1(config-line)#end
 Ca să putem proceda cu criptarea parolelor utilizatorilor, trebuie la început să configurăm conturile utilizatorilor.
 Vom folosi [următorul ghid](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=3099&zoom=180,31,425).
 
-Utilizez comanda `username`. Parola implicit este criptată utilizând algoritmul MD5.
+Utilizăm comanda `username`. Parola implicit este criptată utilizând algoritmul MD5.
 
 ```
 R1(config)# username admin privilege 15 secret 1111
@@ -405,22 +408,22 @@ enable secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
 username admin privilege 15 secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
 ```
 
-Dacă se dorește ca parolele să fie criptate utilizând un algoritm diferit decât cel implicit, ele trebuie fi introduse deja criptate individual atunci când se crează parola, pe lângă tipul numeric al criptării.
+Dacă se dorește ca parolele să fie criptate utilizând un algoritm diferit decât cel implicit, ele trebuie fi introduse deja criptate individual atunci când se crează parola, pe lângă tipului numeric al criptării.
 Iarăși, cum s-a menționat anterior, această metodă nu este comodă, deoarece necesită criptarea aparte, cu toate este clar că poate fi realizată direct în router cu parola clară ca input.
 Poate există o metodă, dar eu nu o pot găsi.
 
 Asemănător, putem crea un cont pentru un utilizator de nivelul privilegiat, zicem, 7, dar din punct de vedere al privilegiilor el ar fi la nivelul user, adică nivelul de privilegii 1.
 Aceasta înseamnă că ar putea utiliza doar comenzile nivelului 1 (un set foarte mic de comenzi).
 Ca să facem acest nivel 7 de privilegii semnificativ, trebuie să mișcăm nivelul necesar pentru executarea unelor comenzi de la nivelul 15 la nivelul 7, ca acel utilizator de nivel 7 să aibă vreun avantaj asupra nivelului 1.
-Aceasta o voi face în [partea 3](#partea-3-configurarea-rolurilor-administrative).
+Aceasta o vom face în [partea 3](#partea-3-configurarea-rolurilor-administrative).
 
+> De fapt, nu. Sistemul de control prin niveluri de privilegii a fost de fapt supracedat de lucrul cu vizualizări și roluri.
+> În partea 3 se realizează exact acel aspect.
 
 ### Configurarea SSH
 
-Ca să putem configura SSH, 
-<!-- avem nevoie de un CA (Certification Authority) care să distribuie certificate digitale, iar pentru crearea certificatelor  -->
-avem nevoie de o pereche de chei RSA.
-Prin urmare, generez o pereche de chei după modulul pe 1024 de biți.
+Ca să putem configura SSH, <!-- avem nevoie de un CA (Certification Authority) care să distribuie certificate digitale, iar pentru crearea certificatelor  --> avem nevoie de o pereche de chei RSA.
+Prin urmare, generez o pereche de chei după un modul pe 1024 de biți.
 
 > Pentru securitate, se recomandă să se folosească cheile după modulul pe 1024 de biți, dar atunci și generarea lor va lua mai mult timp.
 > Pentru serveri CA se recomandă lungimea de 2048 de biți.  
@@ -502,11 +505,11 @@ R1# show ssh
 %No SSHv1 server connections running.
 ```
 
-![Rulăm aplicația](images/part2/telnet_ssh_client_application.png)
+![small Rulăm aplicația](images/part2/telnet_ssh_client_application.png)
 
-În urmare, lucrează orice login.
+La conectare lucrează orice login.
 
-![Ne logăm ca admin](images/part2/ssh_configuration_test.png.png)
+![Ne logăm ca admin](images/part2/ssh_configuration_test.png)
 
 Router-ul cere parola setată la linia vty 0-4; router-ul nu arată banner-ul de logare.
 
@@ -521,6 +524,136 @@ R1>
 
 - Creați vizualizări de roluri multiple și acordați privilegii diferite. 
 - Verificați și contrastați opiniile. 
+
+
+<!-- ### Crearea unor vizualizări de roluri -->
+
+Am utilizat anterior routere PT-Empty.
+Însă, versiunea OS-ului pe acele routere este învechită, și nu permite configurarea vizualizărilor.
+Din fericire, routerul de modelul 4331 are versiunea OS-ului 16.7(3r), pe când vizualizările au fost adăugate în versiunea 12.3.
+Am substituit router-ul R1 veche cu cel nou și am reintrodus comenzile necesare de configurare.
+
+> Am încercat și să copiez imaginea configurației de la dispozitivul veche la dispozitivul nou, însă OS-ul pe R1 era atât de veche că nici nu suporta comanda `tftp-server` necesară pentru [copierea configurației](https://www.cisco.com/c/en/us/support/docs/routers/2500-series-routers/15092-copyimage.html).
+> Copierea configurației utilizând interfața în Cisco Packet Tracer tot nu a lucrat, nici nu a dat greșeli.
+> Presupun că această funcționalitate nu lucrează pentru dispozitive cu versiunele OS-ului diferite.
+
+Deci înainte de a putea [configura vizualizările](https://www.cisco.com/en/US/docs/ios/12_3t/12_3t7/feature/guide/gtclivws.html), trebuie să activăm AAA. [Mai multe informații despre AAA](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=2301&zoom=180,41,640).
+
+```
+R1(config)# aaa new-model
+```
+
+Acum începem cu configurarea vizualizărilor. În primul rând, trebuie să ne schimbăm vizualizarea la ceea care corespunde la nivelul de privilegii 15, root view:
+
+```
+R1# enable view
+Password: 
+R1#%PARSER-6-VIEW_SWITCH: successfully set to view 'root'.
+```
+
+Următorii pași crează o vizualizare:
+
+```
+R1# configure terminal
+R1(config)# parser view ping-reload-view
+R1(config-view)#%PARSER-6-VIEW_CREATED: view 'ping-reload-view' successfully created.
+
+R1(config-view)# secret 0 2222
+R1(config-view)# commands exec include all ping
+R1(config-view)# commands exec include all reload
+R1(config-view)# end
+R1# copy running-config startup-config
+```
+
+Verificăm:
+```
+R1# enable view ping-reload-view
+Password: 2222
+R1#%PARSER-6-VIEW_SWITCH: successfully set to view 'ping-reload-view'.
+
+R1# ping 10.1.1.1
+
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 10.1.1.1, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 8/11/13 ms
+
+R1#?
+Exec commands:
+  disable     Turn off privileged commands
+  enable      Turn on privileged commands
+  exit        Exit from the EXEC
+  logout      Exit from the EXEC
+  ping        Send echo messages
+  reload      Halt and perform a cold restart
+```
+
+Parola acestei vizualizări a fost și criptată corespunzător (ultima linie corespunde parolei 2222):
+```
+R1# enable view
+Password: 1111
+R1#%PARSER-6-VIEW_SWITCH: successfully set to view 'root'.
+
+R1# show run | include secret
+enable secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
+username admin privilege 15 secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
+ secret 5 $1$mERr$YuP0cmcgR3EKCCAur54.f0
+```
+
+Încă un exemplu. Se configurează o vizualizare ce permite utilizarea comenzii `show ip SUBCOMANDA`:
+```
+R1# config terminal
+R1(config)# parser view show-ip-view
+R1(config-view)#%PARSER-6-VIEW_CREATED: view 'show-ip-view' successfully created.
+
+R1(config-view)# secret 0 3333
+R1(config-view)# commands exec include all show ip
+R1(config-view)# end
+R1#
+%SYS-5-CONFIG_I: Configured from console by console
+
+R1# enable view show-ip-view
+Password: 
+R1#%PARSER-6-VIEW_SWITCH: successfully set to view 'show-ip-view'.
+
+R1# show ?
+  ip                 IP information
+R1# show ip ?
+  access-lists  List access lists
+  arp           IP ARP table
+  bgp           BGP information
+  cache         IP fast-switching route cache
+  cef           Cisco Express Forwarding
+  dhcp          Show items in the DHCP database
+  eigrp         IP-EIGRP show commands
+  interface     IP interface status and configuration
+  nat           IP NAT information
+  nbar          Network-Based Application Recognition
+  ospf          OSPF information
+  protocols     IP routing protocol process parameters and statistics
+  rip           IP RIP show commands
+  route         IP routing table
+  ssh           Information on SSH
+```
+
+
+> Routerul nu suportă posibilitatea de a asocia vizualizări cu utilizatorii.
+> Am găndit că deoarece "train"-ul (16.7) este mai mare decât celul în care a fost adăugată această posibilitate (12.2SRB),
+> această versiune va conține toate capacitățile versiunii 12.2(33)SRB, dar nu am avut dreptate.
+> Ei au [modul lor special de a prescrie versiuni la build-uri](https://www.cisco.com/c/en/us/support/docs/ios-nx-os-software/ios-software-release-1513t/200095-Understanding-Cisco-IOS-Naming-Conventio.html).
+> Nu este atât de ușor de determinat dacă o versiune specifică are anumite capacități.
+
+
+<!-- What is "Verificați și contrastați opiniile." ???? -->
+
+<!-- 
+Even the max IOS version does not have these! a shame!
+
+### Crearea unor supravizualizări de roluri
+
+O supravizualizare înseamnă de fapt o grupă de mai multe vizualizări combinate.
+Deci o supravizualizare permite utilizarea tuturor comenzilor admisibile pentru acele vizualizări pe care le conține. -->
+
 
 
 ## Partea 4: Configurarea raportărilor de reziliență și management Cisco IOS
