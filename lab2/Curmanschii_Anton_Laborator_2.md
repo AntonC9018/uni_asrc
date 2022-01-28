@@ -458,6 +458,63 @@ The name for the keys will be: R1.anton.com
 *Mar 1 1:38:49.122: %SSH-5-ENABLED: SSH 1.99 has been enabled
 ```
 
+SSH 1.99 înseamnă că routerul suportă și SSH v1, și SSH v2. [Sursa](https://community.cisco.com/t5/switching/ssh-v1-99-vs-v2-0/td-p/1901112).
+
+Acum putem arăta cheia în modul exec.
+
+```
+R1# show crypto key mypubkey rsa 
+% Key pair was generated at: 1:38:49 UTC March 1 1993
+Key name: R1.anton.com
+ Storage Device: not specified
+ Usage: General Purpose Key
+ Key is not exportable.
+ Key Data:
+ 00001615  00006aed  00005c7f  00000aa8  00003e01  0000572b  00006bfd  00005ec8
+ 00003c0d  00006700  000032d4  00006a7c  00002e89  00002c08  00007685  00002e4f
+ 0000609f  00001e57  00000222  00006f1a  00005194  000016b0  000007b3  21d9
+% Key pair was generated at: 1:38:49 UTC March 1 1993
+Key name: R1.anton.com.server
+Temporary key
+ Usage: Encryption Key
+ Key is not exportable.
+ Key Data:
+ 0000414b  000038f7  000030d7  000049b7  0000660b  000062e9  000022af  00007c6b
+ 00002f81  0000730b  000078f7  000000c7  00003b09  00007be0  00007c76  00003b8e
+ 00005d29  0000375f  00001899  00005e87  0000645e  00004ea4  0000545b  0dcf
+```
+
+Din documentația despre comanda:
+> Secure Shell (SSH) may generate an additional RSA key pair if you generate a key pair on a router having no RSA keys. 
+> The additional key pair is used only by SSH and will have a name such as {router_FQDN}.server. 
+> For example, if a router name is "router1.cisco.com", the key name is "router1.cisco.com.server".
+
+
+Deci, crearea unei pereche de chei criptografice activează automat și SSH.
+
+```
+R1# show ip ssh
+SSH Enabled - version 1.99
+Authentication timeout: 120 secs; Authentication retries: 3
+
+R1# show ssh
+%No SSHv2 server connections running.
+%No SSHv1 server connections running.
+```
+
+![Rulăm aplicația](images/part2/telnet_ssh_client_application.png)
+
+În urmare, lucrează orice login.
+
+![Ne logăm ca admin](images/part2/ssh_configuration_test.png.png)
+
+Router-ul cere parola setată la linia vty 0-4; router-ul nu arată banner-ul de logare.
+
+```
+Password: 1111
+R1>
+```
+
 ## Partea 3: Configurarea rolurilor administrative 
 
 **Obiectivele:**

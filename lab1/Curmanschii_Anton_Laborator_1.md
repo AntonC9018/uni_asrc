@@ -85,7 +85,7 @@ Urmează codul aproximativ:
 ```d
 void DoUserQuery()
 {
-    string queryTemplate = "select * form Users where name = '%s'";
+    string queryTemplate = "select * from Users where name = '%s'";
     string name          = getUserInput();
     string queryString   = format(queryTemplate, name);
     QueryResult results  = executeQuery(queryString);
@@ -96,7 +96,7 @@ void DoUserQuery()
 Deci dacă utilizatorul dă input-ul "Anton", primim interogarea `select * from Users where name = 'Anton'` — informația despre utilizatorul cu numele "Anton".
 
 Ce ar întâmpla, dacă utilizatorul dă `' or '1'='1`?
-Formatând șirul șablon cu `' or '1'='1` ca numele, vom primi interogarea `select * from where name = '' or '1'='1'`.
+Formatând șirul șablon cu `' or '1'='1` ca numele, vom primi interogarea `select * from Users where name = '' or '1'='1'`.
 Această interogare ar afișa la utilizator întregul tabel `Users`, deoarece `'1'='1'` mereu dă `true`.
 
 În acest caz, o validare minimă ar putea lucra: de exemplu să admitem doar literele A-Z și a-z, dar poate există numile într-o altă limbă, de exemplu, scrise cu literele rusește, sau cu cratime înăuntru?
