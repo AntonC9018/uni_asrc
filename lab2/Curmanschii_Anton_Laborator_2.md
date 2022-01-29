@@ -668,6 +668,67 @@ Deci o supravizualizare permite utilizarea tuturor comenzilor admisibile pentru 
 - Efectuați modificări ale routerului și monitorizați rezultatele syslog-ului pe computer. 
 
 
+### Sincrinizarea ceasului utilizând NTP
+
+Aici nu descriu ce-i NTP. [Sursa utilizată pentru studierea mai multor informații și comenzi folosite](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/bsm/configuration/12-4t/bsm-12-4t-book/bsm-time-calendar-set.html).
+
+> Comanda `ntp peer` lipsește pe versiunea Cisco IOS din Cisco Packet Tracer.
+
+Vom face routerul R1 să funcționeze ca un server NTP master.
+Aceasta înseamnă că R1 va distribui pachetele NTP de sincronizare a timpului în dependența de ceasul hardware al său.
+Setarea unui server ca master se folosește pentru a simula apartenența stratului 1 în ierarhia NTP (este în fața ceasului de referință, al stratului 0).
+
+```
+R1> enable
+Password: 1111
+R1# config terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)# ntp master ?
+  <1-15>  Act as NTP master clock
+  <cr>
+R1(config)# ntp master 1
+R1(config)# end
+```
+
+Acum routerul R1 va răspunde la solicitări de sincronizare din partea clienților.
+
+Routerul R2 îl vom configura ca un server de modul simetric activ, adică va funcționa și ca un client, și ca un server NTP.
+Va lua timpul de la routerul R1, și va funcționa ca un provizor NTP de strat 2.
+`ntp update-calendar`, după cum am înțeles, face ca ceasul intern al dispozitivului să fie ajustat în raport cu timpul primit de la NTP. 
+```
+R2> enable
+Password: 1111
+R2# config terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R2(config)# ntp master 2
+R2(config)# ntp server 10.1.1.2
+R2(config)# ntp update-calendar
+R2(config)# end
+```
+
+[Video cu demonstrarea comunicării între R1 și R2](https://youtu.be/hLeurk-YD4s). Filtrarea tipurilor de pachete este setată la UDP — protocolul utilizat sub capota pentru funcționarea NTP.
+
+Routerul R3 va fi la fel dependent de R2, și va funcționa și el în modul simetric.
+```
+R3> enable
+Password: 1111
+R3# config terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R3(config)# ntp master 3
+R3(config)# ntp server 10.2.2.1
+R3(config)# ntp update-calendar
+R3(config)# end
+```
+
+Nu știu cum să verific dacă computer-ul, zicem, PC-A, poate accesa serviciul de timp NTP al routerului R3.
+În principiu, trebuie să creez un mesaj UDP formatat conform standardului NTP și să-l transmit la portul 123, dar nu știu ce să utilizez pentru a face aceasta în Packet Tracer.
+
+
+### Setarea serviciului Syslog
+
+[Informații despre Syslog](https://www.cisco.com/c/en/us/td/docs/routers/access/wireless/software/guide/SysMsgLogging.html).
+
+
 ## Partea 5: Configurarea funcțiilor de securitate automatizate 
 
 **Obiectivele:**
