@@ -226,13 +226,13 @@ void blom(bool shouldGenerateNumbersRandomly)
     }
 
     // k is not implemented (I don't know what it does in the algorithm).
-    ulong[2] g_coefficientsAt(ulong userIndex)
+    ulong[2] g_coefficientsAt(size_t userIndex)
     {
         return gs_coefficients[userIndex * k];
     }
 
     // Check if all pairs matched
-    foreach (ulong[2] indexPair; uniqueIndexPairs(3))
+    foreach (size_t[2] indexPair; uniqueIndexPairs(3))
     {
         ulong calculate(size_t i, size_t j)
         {
