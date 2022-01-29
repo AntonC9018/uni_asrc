@@ -736,6 +736,33 @@ Nu știu cum să verific dacă computer-ul, zicem, PC-A, poate accesa serviciul 
 [Informații despre Syslog](https://www.cisco.com/c/en/us/td/docs/routers/access/wireless/software/guide/SysMsgLogging.html).
 
 
+```
+R1(config)# loggin buffered 
+R1(config)# logging buffered 
+R1(config)# logging host 192.168.1.2
+R1(config)# end
+```
+
+![Selectăm serviciul Syslog pe server](images/part3/PC-A_select_syslog_service.png)
+
+Cea mai simplă metodă de a trimite un mesaj test este de a intra în modul de configurare globală și de ieșit imediat:
+
+```
+R1# config terminal
+R1(config)# end
+```
+
+După aceasta în lista mesajelor apare un mesaj nou.
+
+![New message appeared](images/part3/PC-A_syslog_new_message.png)
+
+Fiind în regimul simulării, putem inpecta ce pachet a fost transmis de router.
+Mesajul transmis utilizează protocolul UDP.
+
+![Message in simulation mode](images/part3/R1_syslog_message.png)
+
+![Message is UDP](images/part3/syslog_message_is_udp.png)
+
 ## Partea 5: Configurarea funcțiilor de securitate automatizate 
 
 **Obiectivele:**
