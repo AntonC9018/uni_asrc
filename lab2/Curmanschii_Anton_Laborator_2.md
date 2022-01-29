@@ -4,7 +4,11 @@ A elaborat: **Curmanschii Anton, IA1901.**
 
 Tema: **Securizarea routerului pentru acces administrativ.**
 
+
+## Tabelul de conținut
+
 - [Laborator 2 la ASRC](#laborator-2-la-asrc)
+  - [Tabelul de conținut](#tabelul-de-conținut)
   - [Partea 1: Configurare de bază a dispozitivului de rețea](#partea-1-configurare-de-bază-a-dispozitivului-de-rețea)
     - [DCE / DTE](#dce--dte)
     - [Realizarea topologiei](#realizarea-topologiei)
@@ -520,7 +524,7 @@ Din documentația despre comanda:
 > For example, if a router name is "router1.cisco.com", the key name is "router1.cisco.com.server".
 
 
-Deci, crearea unei pereche de chei criptografice activează automat și SSH.
+Deci, crearea unei perechi de chei criptografice activează automat și SSH.
 
 ```
 R1# show ip ssh
@@ -562,7 +566,7 @@ Am substituit router-ul R1 veche cu cel nou și am reintrodus comenzile necesare
 
 > Am încercat și să copiez imaginea configurației de la dispozitivul veche la dispozitivul nou, însă OS-ul pe R1 era atât de veche că nici nu suporta comanda `tftp-server` necesară pentru [copierea configurației](https://www.cisco.com/c/en/us/support/docs/routers/2500-series-routers/15092-copyimage.html).
 > Copierea configurației utilizând interfața în Cisco Packet Tracer tot nu a lucrat, nici nu a dat greșeli.
-> Presupun că această funcționalitate nu lucrează pentru dispozitive cu versiunele OS-ului diferite.
+> Presupun că această funcționalitate nu lucrează pe două dispozitive cu versiunele OS-ului diferite.
 
 Deci înainte de a putea [configura vizualizările](https://www.cisco.com/en/US/docs/ios/12_3t/12_3t7/feature/guide/gtclivws.html), trebuie să activăm AAA. [Mai multe informații despre AAA](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=2301&zoom=180,41,640).
 
@@ -570,11 +574,11 @@ Deci înainte de a putea [configura vizualizările](https://www.cisco.com/en/US/
 R1(config)# aaa new-model
 ```
 
-Acum începem cu configurarea vizualizărilor. În primul rând, trebuie să ne schimbăm vizualizarea la ceea care corespunde la nivelul de privilegii 15, root view:
+Acum începem cu configurarea vizualizărilor. În primul rând, trebuie să ne schimbăm vizualizarea la ceea care corespunde nivelului de privilegii 15, root view:
 
 ```
 R1# enable view
-Password: 
+Password: 1111
 R1#%PARSER-6-VIEW_SWITCH: successfully set to view 'root'.
 ```
 
@@ -691,7 +695,7 @@ Aici nu descriu ce-i NTP. [Sursa utilizată pentru studierea mai multor informa�
 
 Vom face routerul R1 să funcționeze ca un server NTP master.
 Aceasta înseamnă că R1 va distribui pachetele NTP de sincronizare a timpului în dependența de ceasul hardware al său.
-Setarea unui server ca master se folosește pentru a simula apartenența stratului 1 în ierarhia NTP (este în fața ceasului de referință, al stratului 0).
+Setarea unui server ca master poate fi folosită pentru a simula apartenența stratului 1 în ierarhia NTP (este în fața ceasului de referință, al stratului 0).
 
 ```
 R1> enable
@@ -737,7 +741,7 @@ Routerii determină singuri la ce strat ei aparțină. Putem inspecta pachet-ul 
 
 ![](images/part4/R2_R1_ntp_message_1.png)
 
-Iar răspunsul vine deja din partea R1 care i-am atribuit stratul 1, deci pachetul transmis drep răspuns deja conține strat egal cu 1.
+Iar răspunsul vine deja din partea R1 cărui i-am atribuit stratul 1, deci pachetul transmis drep răspuns deja conține strat egal cu 1.
 
 ![](images/part4/R1_R2_ntp_message_2.png)
 
@@ -759,7 +763,7 @@ R1(config)# end
 
 ![Selectăm serviciul Syslog pe server](images/part4/PC-A_select_syslog_service.png)
 
-Cea mai simplă metodă de a trimite un mesaj test este de a intra în modul de configurare globală și de ieșit imediat:
+Cea mai simplă metodă de a trimite un mesaj test este de a intra în modul de configurare globală și de a ieși imediat:
 
 ```
 R1# config terminal
@@ -977,7 +981,7 @@ The name for the keys will be: test.test
 
 ### SDM
 
-[Informații](https://www.cisco.com/c/en/us/support/docs/cloud-systems-management/router-security-device-manager/71305-basic-router-config-sdm.html). SDM este o aplicație GUI ce permite comunicarea generală a unui device ca router.
+[Informații](https://www.cisco.com/c/en/us/support/docs/cloud-systems-management/router-security-device-manager/71305-basic-router-config-sdm.html). SDM este o aplicație GUI ce permite comunicarea generală a unui device, fie router.
 Pare că nu poate fi utilizată în Cisco Packet Tracer.
 
 Pe când SDM se concentrează asupra configurării generale, AutoSecure se concentrează asupra configurării capacităților anume legate de securitate.
@@ -989,4 +993,4 @@ Am studiat care este diferența între DCE și DTE.
 Am citit unele informații referitor la conceptul AAA, protocoalele Telnet, SSH, NTP, SNMP.
 Am ilustrat configurarea funcționării corecte a acestor protocoale în Cisco Packet Tracer.
 Am configurat parolele și capacitățile legate de logare pe routere în Cisco Packet Tracer.
-Am folosit opțiunea AutoSecure pentru configurare funcționalităților de securitate automată.
+Am folosit opțiunea AutoSecure pentru configurarea funcționalităților de securitate automată.
