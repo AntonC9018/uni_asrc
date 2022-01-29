@@ -737,7 +737,6 @@ Nu știu cum să verific dacă computer-ul, zicem, PC-A, poate accesa serviciul 
 
 
 ```
-R1(config)# loggin buffered 
 R1(config)# logging buffered 
 R1(config)# logging host 192.168.1.2
 R1(config)# end
@@ -756,7 +755,7 @@ După aceasta în lista mesajelor apare un mesaj nou.
 
 ![New message appeared](images/part4/PC-A_syslog_new_message.png)
 
-Fiind în regimul simulării, putem inpecta ce pachet a fost transmis de router.
+Fiind în regimul simulării, putem inspecta pachetul ce a fost transmis de către router.
 Mesajul transmis utilizează protocolul UDP.
 
 ![Message in simulation mode](images/part4/R1_syslog_message.png)
@@ -770,7 +769,7 @@ Mesajul transmis utilizează protocolul UDP.
 
 [O lucrare exemplară realizată în packet tracer](https://intranet.ifs.ifsuldeminas.edu.br/kleber.rezende/anteriores/1sem2015/5REDES/Atividades%20em%20Aula/Mar%C3%A7o-16-lab_1.pdf).
 
-În Cisco Packet Tracer nu putem face atâtea multe lucruri cu SNMP:
+În Cisco Packet Tracer nu putem face atât de multe lucruri cu SNMP:
 
 - Putem conecta dispozitive la rețea SNMP;
 - Putem folosi un browser MIB pentru a accesa sau pentru a seta valori pentru opțiunile configurațiilor.
@@ -785,7 +784,7 @@ R1(config)#snmp-server community community-readwrite rw
 
 ![small Accesăm MIB browser de pe PC-A](images/part4/mib_browser_application.png)
 
-Introducem comunitățile configurate în câmpurile corespunzătoarea.
+Introducem comunitățile (parolele) configurate în câmpurile corespunzătoare.
 În câmpul "Read" scriem "community-readonly", în câmpul "Write" scriem "community-readwrite".
 
 ![](images/part4/snmp_mib_config.png)
@@ -813,3 +812,157 @@ hostname R1_Test
 - Blocați un router utilizând AutoSecure și verificați configurația. 
 - Folosiți instrumentul Audit de securitate SDM pentru a identifica vulnerabilitățile și pentru a bloca serviciile. 
 - Contrastați configurația AutoSecure cu SDM.
+
+
+### AutoSecure
+
+[Infomații despre AutoSecure](https://www.cisco.com/E-Learning/bulk/public/celc/CRS/media/targets/resources_mod07/7_1_2_AutoSecure.pdf).
+În scurt, permite configurarea automată a capacităților de securitate ale unui router.
+Stinge unele capacități nesigure și pornește unele capacități de securitate.
+
+```
+R1# auto secure 
+
+	              --- AutoSecure Configuration ---
+*** AutoSecure configuration enhances the security of
+the router, but it will not make it absolutely resistant
+to all security attacks ***
+
+AutoSecure will modify the configuration of your device.
+All configuration changes will be shown. For a detailed
+explanation of how the configuration changes enhance security
+and any possible side effects, please refer to Cisco.com for
+Autosecure documentation.
+At any prompt you may enter '?' for help.
+Use ctrl-c to abort this session at any prompt.
+
+Gathering information about the router for AutoSecure
+
+Is this router connected to internet? [no]:
+
+Securing Management plane services...
+
+Disabling service finger
+Disabling service pad
+Disabling udp & tcp small servers
+Enabling service password encryption
+Enabling service tcp-keepalives-in
+Enabling service tcp-keepalives-out
+Disabling the cdp protocol
+
+Disabling the bootp server
+Disabling the http server
+Disabling the finger service
+Disabling source routing
+Disabling gratuitous arp
+
+Here is a sample Security Banner to be shown
+at every access to device. Modify it to suit your
+enterprise requirements.
+
+Authorized Access only
+  This system is the property of So-&-So-Enterprise.
+  UNAUTHORIZED ACCESS TO THIS DEVICE IS PROHIBITED.
+  You must have explicit permission to access this
+  device. All activities performed on this device
+  are logged. Any violations of access policy will result
+  in disciplinary action.
+
+
+Enter the security banner {Put the banner between
+k and k, where k is any character}:&Glad to see you, user!&
+Enable secret is either not configured or
+ is the same as enable password
+Enter the new enable secret: 1111
+Confirm the enable secret: 1111
+Enter the new enable password: 2222
+Confirm the enable password: 2222
+
+Configuration of local user database
+Enter the username: admin
+Enter the password: 1111
+Confirm the password: 1111
+
+Configuring AAA local authentication
+Configuring Console, Aux and VTY lines for
+local authentication, exec-timeout, and transport
+Securing device against Login Attacks
+Configure the following parameters
+
+Blocking Period when Login Attack detected: ?
+% A decimal number between 1 and 32767.
+Blocking Period when Login Attack detected: 10
+
+Maximum Login failures with the device: 10
+
+Maximum time period for crossing the failed login attempts: 10
+
+Configure SSH server? [yes]: 
+
+Enter the host name: R1
+Enter the domain-name: anton.com
+Disabling mop on Ethernet interfaces
+
+Securing Forwarding plane services...
+
+Enabling CEF (This might impact the memory requirements for your platform)
+Enabling unicast rpf on all interfaces connected
+to internet
+
+Configure CBAC Firewall feature? [yes/no]: no
+Tcp intercept feature is used prevent tcp syn attack
+on the servers in the network. Create autosec_tcp_intercept_list
+to form the list of servers to which the tcp traffic is to
+be observed
+Enable tcp intercept feature? [yes/no]: yes
+
+This is the configuration generated:
+
+!
+service password-encryption
+no cdp run
+access-list 100 permit udp any any eq bootpc
+banner motd &Glad to see you, user!&
+enable secret 5 $1$mERr$yZKBoxU.805LdhSXOw6y61
+enable password 7 08731E1C5B
+username admin password 7 08701D1F58
+aaa new-model
+aaa authentication login local_auth local
+line con 0
+ login authentication local_auth
+ exec-timeout 5 0
+ transport output telnet
+line vty 0 4
+ login authentication local_auth
+ transport input telnet
+service timestamps debug datetime msec
+service timestamps log datetime msec
+logging trap debugging
+logging console
+logging buffered
+line vty 0 4
+ transport input ssh
+ transport input telnet
+hostname R1
+ip domain-name anton.com
+ip access-list extended 100
+ permit udp any any eq bootpc
+
+ Apply this configuration to running-config? [yes]: 
+Applying the config generated to running-config
+The name for the keys will be: test.test
+
+% The key modulus size is 1024 bits
+% Generating 1024 bit RSA keys, keys will be non-exportable...
+*Mar  1 22:56:41.001: %SYS-3-CPUHOG: Task is running for (2007)msecs, more than
+(2000)msecs (0/0),process = crypto sw pk proc.
+-Traceback= 0x824198E0 0x82419FC4 0x8283C238 0x82866AD8 0x828667A8 0x82865D34 0x
+828660F4 0x82866510 0x802335D4 0x80236D80 [OK]
+```
+
+### SDM
+
+[Informații](https://www.cisco.com/c/en/us/support/docs/cloud-systems-management/router-security-device-manager/71305-basic-router-config-sdm.html). SDM este o aplicație GUI ce permite comunicarea generală a unui device ca router.
+Pare că nu poate fi utilizată în Cisco Packet Tracer.
+
+Pe când SDM se concentrează asupra configurării generale, AutoSecure se concentrează asupra configurării capacităților anume legate de securitate.
