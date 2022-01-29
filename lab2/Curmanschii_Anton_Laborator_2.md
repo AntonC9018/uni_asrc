@@ -668,7 +668,7 @@ Deci o supravizualizare permite utilizarea tuturor comenzilor admisibile pentru 
 - Efectuați modificări ale routerului și monitorizați rezultatele syslog-ului pe computer. 
 
 
-### Sincrinizarea ceasului utilizând NTP
+### Sincronizarea ceasului utilizând NTP
 
 Aici nu descriu ce-i NTP. [Sursa utilizată pentru studierea mai multor informații și comenzi folosite](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/bsm/configuration/12-4t/bsm-12-4t-book/bsm-time-calendar-set.html).
 
