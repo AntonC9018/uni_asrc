@@ -417,7 +417,7 @@ Aceasta înseamnă că ar putea utiliza doar comenzile nivelului 1 (un set foart
 Ca să facem acest nivel 7 de privilegii semnificativ, trebuie să mișcăm nivelul necesar pentru executarea unelor comenzi de la nivelul 15 la nivelul 7, ca acel utilizator de nivel 7 să aibă vreun avantaj asupra nivelului 1.
 Aceasta o vom face în [partea 3](#partea-3-configurarea-rolurilor-administrative).
 
-> De fapt, nu. Sistemul de control prin niveluri de privilegii a fost de fapt supracedat de lucrul cu vizualizări și roluri.
+> De fapt, nu. Sistemul de control prin niveluri de privilegii a fost de fapt suprapus la lucrul cu vizualizări și roluri.
 > În partea 3 se realizează exact acel aspect.
 
 ### Configurarea SSH
@@ -762,6 +762,49 @@ Mesajul transmis utilizează protocolul UDP.
 ![Message in simulation mode](images/part3/R1_syslog_message.png)
 
 ![Message is UDP](images/part3/syslog_message_is_udp.png)
+
+
+### Configurarea SNMP
+
+[Informații](https://www.cisco.com/c/en/us/td/docs/optical/15000r/dwdm/configuration/guide/b_snmp.html).
+
+[O lucrare exemplară realizată în packet tracer](https://intranet.ifs.ifsuldeminas.edu.br/kleber.rezende/anteriores/1sem2015/5REDES/Atividades%20em%20Aula/Mar%C3%A7o-16-lab_1.pdf).
+
+În Cisco Packet Tracer nu putem face atâtea multe lucruri cu SNMP:
+
+- Putem conecta dispozitive la rețea SNMP;
+- Putem folosi un browser MIB pentru a accesa sau pentru a seta valori pentru opțiunile configurațiilor.
+- Nu putem configura setările legate la securitatea protocolului, cu toate că protocolul definește unele opțiuni avansate din punct de vedere a securității.
+
+
+<!-- Configurăm routerul R1 să  -->
+```
+R1(config)#snmp-server community community-readonly ro
+R1(config)#snmp-server community community-readwrite rw
+```
+
+![small Accesăm MIB browser de pe PC-A](images/part3/mib_browser_application.png)
+
+Introducem comunitățile configurate în câmpurile corespunzătoarea.
+În câmpul "Read" scriem "community-readonly", în câmpul "Write" scriem "community-readwrite".
+
+![](images/part3/snmp_mib_config.png)
+
+Vizualizăm valoarea `sysName` a acelui router.
+
+![](images/part3/R1_snmp_sysname.png)
+
+Putem schimba această valoare, selectând metoda "Set" și introducând un șir de caractere:
+
+![](images/part3/R1_change_name_mib.png)
+
+Acum putem privi valoarea această de pe router:
+
+```
+R1_Test# show running-config | include hostname
+hostname R1_Test
+```
+
 
 ## Partea 5: Configurarea funcțiilor de securitate automatizate 
 
