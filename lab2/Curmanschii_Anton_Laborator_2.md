@@ -4,6 +4,26 @@ A elaborat: **Curmanschii Anton, IA1901.**
 
 Tema: **Securizarea routerului pentru acces administrativ.**
 
+- [Laborator 2 la ASRC](#laborator-2-la-asrc)
+  - [Partea 1: Configurare de bază a dispozitivului de rețea](#partea-1-configurare-de-bază-a-dispozitivului-de-rețea)
+    - [DCE / DTE](#dce--dte)
+    - [Realizarea topologiei](#realizarea-topologiei)
+  - [Partea 2: Control acces administrativ pentru routere](#partea-2-control-acces-administrativ-pentru-routere)
+    - [Configurați un banner de avertizare de conectare](#configurați-un-banner-de-avertizare-de-conectare)
+    - [Configurați securitatea îmbunătățită a parolei](#configurați-securitatea-îmbunătățită-a-parolei)
+    - [Configurarea parolelor utilizatorilor](#configurarea-parolelor-utilizatorilor)
+    - [Configurarea SSH](#configurarea-ssh)
+  - [Partea 3: Configurarea rolurilor administrative](#partea-3-configurarea-rolurilor-administrative)
+    - [Crearea unor vizualizări de roluri](#crearea-unor-vizualizări-de-roluri)
+  - [Partea 4: Configurarea raportărilor de reziliență și management Cisco IOS](#partea-4-configurarea-raportărilor-de-reziliență-și-management-cisco-ios)
+    - [Sincronizarea ceasului utilizând NTP](#sincronizarea-ceasului-utilizând-ntp)
+    - [Setarea serviciului Syslog](#setarea-serviciului-syslog)
+    - [Configurarea SNMP](#configurarea-snmp)
+  - [Partea 5: Configurarea funcțiilor de securitate automatizate](#partea-5-configurarea-funcțiilor-de-securitate-automatizate)
+    - [AutoSecure](#autosecure)
+    - [SDM](#sdm)
+  - [Concluzii](#concluzii)
+
 
 ## Partea 1: Configurare de bază a dispozitivului de rețea
 
@@ -24,8 +44,27 @@ img[alt^="small"]
 
 ![small Topologia](images/topology.png)
 
+
+### DCE / DTE
+
 [DTE](https://www.wikiwand.com/en/Data_terminal_equipment),
 [DCE](https://www.wikiwand.com/en/Data_circuit-terminating_equipment).
+
+Am studiat diferența între DCE și DTE. În scurt:
+
+- DCE (de ex. switch-uri) servește ca generatorul semnalelor de sincronizare a ceasului, iar DTE (router, calculator) le consumă. 
+  (Însă aceasta nu înseamnă că DTE nu poate genera semnalele el însuși).
+- DCE are pin-urile de input și output reversate în comparația cu DTE 
+  (pe DCE pinul de input este 2, iar cel de output este 3, iar pe DTE pinul de input este 3, iar cel de ouptut este 2).
+  De aceea, device-uri DTE se conectează la device-uri DCE printr-o conexiune straight-through, iar conexiunile DTE-DTE și DCE-DCE folosesc cabluri crossover, sau un modem null.
+- Aceste diferențe sunt istorice, mai puțin relevante în timpul contemporar din punct de vedere funcțional, deoarece există [auto MDI/MDIX](https://www.wikiwand.com/en/Medium-dependent_interface) care permite reconfigurarea programatică a rolurilor pin-urilor în dependența de context în care ele sunt folosite (drept input sau drept output).
+
+În topologia de pe imagine, avem două conexiuni seriale între routeri, unde unul din device-uri joacă rolul DCE, iar altul joacă rolul DTE.
+În cazul dat DCE se referă anume la faptul că generează semnale de sincronizare a ceasului.
+Acest fapt este indicat și de semnul ceasului mic care se află aproape de cablu.
+
+
+### Realizarea topologiei
 
 > Avertizarea pentru studenții care utilizează lucrarea mea ca referință!
 > Nu utilizați routerele PT-Empty, deoarece versiunea OS-ului pe ele este învechită, și nu suportă funcțiile care se cere să ilustrați în această lucrare de laborator. 
@@ -304,7 +343,7 @@ Probabil există o comandă care pur și simplu face criptarea, dar eu nu o pot 
 
 Deci în continuare setăm în modul indicat mai sus parole la toate routerele.
 
-### Configurați un banner de avertizare de conectare.
+### Configurați un banner de avertizare de conectare
 
 <!-- [Informații despre Cisco Banner](https://www.manageengine.com/network-configuration-manager/configlets/configure-banner-cisco.html). -->
 
@@ -347,7 +386,7 @@ Acum ne conectăm la router R1 de pe calculatorul PC-C, folosind Telnet.
 ![Vedem banner-ul nostru](images/part2/telnet_login_banner.png)
 
 
-### Configurați securitatea îmbunătățită a parolei.
+### Configurați securitatea îmbunătățită a parolei
 
 Implicit, toate parolele sunt stocate în text clar (cu excepția parolei `enable secret`).
 Un atacator ar putea să le găsească în rundown-ul configurării și să le fure:
@@ -380,18 +419,6 @@ service password-encryption
  password 7 08701D1F58
 ```
 
-<!-- Presupun că putem schimba metoda aceasta în timpul setării acestei parole, dar pare că nu am dreptate.
-```
-R1#config termina
-Enter configuration commands, one per line.  End with CNTL/Z.
-R1(config)#line vty 0 4
-R1(config-line)#no password
-R1(config-line)#password ?
-  7     Specifies a HIDDEN password will follow
-  LINE  The UNENCRYPTED (cleartext) line password
-R1(config-line)#password 1111
-R1(config-line)#end
-``` -->
 
 ### Configurarea parolelor utilizatorilor
 
@@ -526,7 +553,7 @@ R1>
 - Verificați și contrastați opiniile. 
 
 
-<!-- ### Crearea unor vizualizări de roluri -->
+### Crearea unor vizualizări de roluri
 
 Am utilizat anterior routere PT-Empty.
 Însă, versiunea OS-ului pe acele routere este învechită, și nu permite configurarea vizualizărilor.
@@ -642,18 +669,6 @@ R1# show ip ?
 > această versiune va conține toate capacitățile versiunii 12.2(33)SRB, dar nu am avut dreptate.
 > Ei au [modul lor special de a prescrie versiuni la build-uri](https://www.cisco.com/c/en/us/support/docs/ios-nx-os-software/ios-software-release-1513t/200095-Understanding-Cisco-IOS-Naming-Conventio.html).
 > Nu este atât de ușor de determinat dacă o versiune specifică are anumite capacități.
-
-
-<!-- What is "Verificați și contrastați opiniile." ???? -->
-
-<!-- 
-Even the max IOS version does not have these! a shame!
-
-### Crearea unor supravizualizări de roluri
-
-O supravizualizare înseamnă de fapt o grupă de mai multe vizualizări combinate.
-Deci o supravizualizare permite utilizarea tuturor comenzilor admisibile pentru acele vizualizări pe care le conține. -->
-
 
 
 ## Partea 4: Configurarea raportărilor de reziliență și management Cisco IOS
@@ -966,3 +981,12 @@ The name for the keys will be: test.test
 Pare că nu poate fi utilizată în Cisco Packet Tracer.
 
 Pe când SDM se concentrează asupra configurării generale, AutoSecure se concentrează asupra configurării capacităților anume legate de securitate.
+
+
+## Concluzii
+
+Am studiat care este diferența între DCE și DTE. 
+Am citit unele informații referitor la conceptul AAA, protocoalele Telnet, SSH, NTP, SNMP.
+Am ilustrat configurarea funcționării corecte a acestor protocoale în Cisco Packet Tracer.
+Am configurat parolele și capacitățile legate de logare pe routere în Cisco Packet Tracer.
+Am folosit opțiunea AutoSecure pentru configurare funcționalităților de securitate automată.
