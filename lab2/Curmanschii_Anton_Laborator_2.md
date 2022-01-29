@@ -720,11 +720,11 @@ R3(config)# end
 
 Routerii determină singuri la ce strat ei aparțină. Putem inspecta pachet-ul de solicitare trimis de R2, de exemplu.
 
-![](images/part3/R2_R1_ntp_message_1.png)
+![](images/part4/R2_R1_ntp_message_1.png)
 
 Iar răspunsul vine deja din partea R1 care i-am atribuit stratul 1, deci pachetul transmis drep răspuns deja conține strat egal cu 1.
 
-![](images/part3/R1_R2_ntp_message_2.png)
+![](images/part4/R1_R2_ntp_message_2.png)
 
 
 Nu știu cum să verific dacă computer-ul, zicem, PC-A, poate accesa serviciul de timp NTP al routerului R3.
@@ -743,7 +743,7 @@ R1(config)# logging host 192.168.1.2
 R1(config)# end
 ```
 
-![Selectăm serviciul Syslog pe server](images/part3/PC-A_select_syslog_service.png)
+![Selectăm serviciul Syslog pe server](images/part4/PC-A_select_syslog_service.png)
 
 Cea mai simplă metodă de a trimite un mesaj test este de a intra în modul de configurare globală și de ieșit imediat:
 
@@ -754,14 +754,14 @@ R1(config)# end
 
 După aceasta în lista mesajelor apare un mesaj nou.
 
-![New message appeared](images/part3/PC-A_syslog_new_message.png)
+![New message appeared](images/part4/PC-A_syslog_new_message.png)
 
 Fiind în regimul simulării, putem inpecta ce pachet a fost transmis de router.
 Mesajul transmis utilizează protocolul UDP.
 
-![Message in simulation mode](images/part3/R1_syslog_message.png)
+![Message in simulation mode](images/part4/R1_syslog_message.png)
 
-![Message is UDP](images/part3/syslog_message_is_udp.png)
+![Message is UDP](images/part4/syslog_message_is_udp.png)
 
 
 ### Configurarea SNMP
@@ -783,20 +783,20 @@ R1(config)#snmp-server community community-readonly ro
 R1(config)#snmp-server community community-readwrite rw
 ```
 
-![small Accesăm MIB browser de pe PC-A](images/part3/mib_browser_application.png)
+![small Accesăm MIB browser de pe PC-A](images/part4/mib_browser_application.png)
 
 Introducem comunitățile configurate în câmpurile corespunzătoarea.
 În câmpul "Read" scriem "community-readonly", în câmpul "Write" scriem "community-readwrite".
 
-![](images/part3/snmp_mib_config.png)
+![](images/part4/snmp_mib_config.png)
 
 Vizualizăm valoarea `sysName` a acelui router.
 
-![](images/part3/R1_snmp_sysname.png)
+![](images/part4/R1_snmp_sysname.png)
 
 Putem schimba această valoare, selectând metoda "Set" și introducând un șir de caractere:
 
-![](images/part3/R1_change_name_mib.png)
+![](images/part4/R1_change_name_mib.png)
 
 Acum putem privi valoarea această de pe router:
 
