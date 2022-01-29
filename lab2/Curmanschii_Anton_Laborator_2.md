@@ -700,7 +700,6 @@ R2> enable
 Password: 1111
 R2# config terminal
 Enter configuration commands, one per line.  End with CNTL/Z.
-R2(config)# ntp master 2
 R2(config)# ntp server 10.1.1.2
 R2(config)# ntp update-calendar
 R2(config)# end
@@ -714,11 +713,19 @@ R3> enable
 Password: 1111
 R3# config terminal
 Enter configuration commands, one per line.  End with CNTL/Z.
-R3(config)# ntp master 3
 R3(config)# ntp server 10.2.2.1
 R3(config)# ntp update-calendar
 R3(config)# end
 ```
+
+Routerii determină singuri la ce strat ei aparțină. Putem inspecta pachet-ul de solicitare trimis de R2, de exemplu.
+
+![](images/part3/R2_R1_ntp_message_1.png)
+
+Iar răspunsul vine deja din partea R1 care i-am atribuit stratul 1, deci pachetul transmis drep răspuns deja conține strat egal cu 1.
+
+![](images/part3/R1_R2_ntp_message_2.png)
+
 
 Nu știu cum să verific dacă computer-ul, zicem, PC-A, poate accesa serviciul de timp NTP al routerului R3.
 În principiu, trebuie să creez un mesaj UDP formatat conform standardului NTP și să-l transmit la portul 123, dar nu știu ce să utilizez pentru a face aceasta în Packet Tracer.
