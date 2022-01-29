@@ -4,6 +4,8 @@ A elaborat: **Curmanschii Anton, IA1901.**
 
 Tema: **Securizarea routerului pentru acces administrativ.**
 
+Toate configurațiile rețelei în Cisco Packet Tracer [le descărcați de pe github](https://github.com/AntonC9018/uni_asrc/tree/master/lab2/networks).
+
 
 ## Tabelul de conținut
 
