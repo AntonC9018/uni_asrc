@@ -57,6 +57,7 @@ R1(config-line)# exit
 
 R1(config)# line vty 0 4
 R1(config-line)# login authentication all-line-login
+R1(config-line)# no password
 R1(config-line)# exit
 
 R1(config)# line console 0
@@ -115,6 +116,18 @@ Portul aux folosește tehnologii învechite, se aplică la transmiterea datelor 
 Cel puțin în Cisco Packet Tracer putem conecta laptop-ul nostru la port-ul Aux al router-ului, dar lucrează tot așa ca dacă l-am fi conectat la portul Console.
 Unica diferența este că consola arată mesajul "R1 tty1 is now available" dacă folosim Aux, și "R1 con0 is now available", dacă folosim Console.
 
+Însă, dacă ne uităm în output-ul lui `show running-config`, putem observa că configurația de logare nu a fost aplicată la linia aux.
+
+```
+line con 0
+ login authentication all-line-login
+!
+line aux 0
+!
+line vty 0 4
+ login authentication all-line-login
+!
+```
 
 ## Partea 3: Configurarea autentificării locale folosind AAA
 
@@ -133,9 +146,39 @@ Aceste obiective au fost realizate în punctul 1, sau și mai anterior (am umplu
 
 **Obiectivele:**
 
-• Instalați un server RADIUS pe un computer. 
-• Configurați utilizatorii pe serverul RADIUS. 
-• Configurați serviciile AAA pe un router pentru a accesa serverul RADIUS pentru autentificare cu Cisco IOS. 
-• Configurați serviciile AAA pe un router pentru a accesa serverul RADIUS pentru autentificare cu SDM. 
-• Testați configurația AAA RADIUS.
+- Instalați un server RADIUS pe un computer. 
+- Configurați utilizatorii pe serverul RADIUS. 
+- Configurați serviciile AAA pe un router pentru a accesa serverul RADIUS pentru autentificare cu Cisco IOS. 
+- Configurați serviciile AAA pe un router pentru a accesa serverul RADIUS pentru autentificare cu SDM. 
+- Testați configurația AAA RADIUS.
 
+[Informații despre RADIUS](https://www.cisco.com/c/dam/en/us/td/docs/ios/security/configuration/guide/12_4t/sec_12_4t_book.pdf#page=52&zoom=180,49,21).
+
+Configurăm serverul PC-A să devină un server RADIUS.
+Îi dăm adresa router-ului R1, și creăm un utilizator în baza de date.
+
+![](images/radius_server_configuration.png)
+
+În router-ul R1, reconfigurăm profilul `all-line-login`, deja aplicat la liniile vty, console și aux, adăugând la el `group radius` — faptul că se va folosi prima pentru a încerca logarea.
+După aceasta adaugăm în lista serverilor RADIUS serverul nostru, și îi configurăm adresa IP și parola. 
+
+```
+R1(config)# aaa authentication login all-line-login group radius local
+R1(config)# radius server radius-server-1 
+R1(config-radius-server)# address ipv4 192.168.1.2
+R1(config-radius-server)# key 1111
+R1(config-radius-server)# end
+```
+
+Încercăm să ne conectăm la router-ul R1 de pe Laptop, folosind SSH.
+Ca să fie clar, pe serverul RADIUS avem doar contul admin1, iar în baza de date locală — admin și user1.
+
+![](images/sshing_as_admin1.png)
+
+![](images/sshing_as_admin1_success.png)
+
+și Telnet:
+
+![](images/telneting_as_admin1.png)
+
+![](images/aaa_authentication_telnet.png)
