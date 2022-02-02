@@ -151,8 +151,7 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
 
         writeln("Transform state vector:\n", 
             state[].map!(
-                a => (cast(ubyte*)(&a))[0 .. 4]
-                    // (cast(ubyte[])[a])
+                a => (cast(ubyte[])(&a)[0 .. 1])
                     .toHexString!(LetterCase.lower)
                     .idup)
             .joiner("\n"));
