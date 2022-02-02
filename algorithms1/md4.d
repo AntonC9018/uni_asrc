@@ -1,3 +1,7 @@
+// To compile, do `dmd md4.d` (optionally with the -m64 flag).
+// To unittest, compile with the flags `-main -unittest`.
+// To debug, compile with the flag `-version=DebugMD4`.
+
 struct MD4Context
 {
 	uint[4] hash;
@@ -5,12 +9,133 @@ struct MD4Context
 	ulong byteCount;
 }
 
-private uint leftShiftRotate(uint x, uint s)
+ubyte[MD4Context.hash.sizeof] md4Of(scope const(ubyte)[] input)
 {
-	return (x << s) | (x >> (32 - s));
+    MD4Context context = md4CreateContext();
+    md4Update(&context, input);
+    return md4Final(&context);
+}
+unittest
+{
+    static string md4(string input)
+    {
+        import std.digest : toHexString, LetterCase;
+        import std.string : representation;
+        return md4Of(input.representation).toHexString!(LetterCase.lower).idup;
+    }
+
+    assert(md4("") == "31d6cfe0d16ae931b73c59d7e0c089c0");
+    assert(md4("a") == "bde52cb31de33e46245e05fbdbd6fb24");
+    assert(md4("abc") == "a448017aaf21d8525fc10ae87aa6729d");
+    assert(md4("message digest") == "d9130a8164549fe818874806e1c7014b");
+    assert(md4("abcdefghijklmnopqrstuvwxyz") == "d79e1c308aa5bbcdeea8ed63df412da9");
+    assert(md4("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") == "043f8582f241db351ce627e153e7f0e4");
+    assert(md4("12345678901234567890123456789012345678901234567890123456789012345678901234567890") == "e33b4ddc9c38f2199c3e7b164fcc0536");
 }
 
-static void md4Transform(ref uint[4] hash, in uint[16] state)
+MD4Context md4CreateContext()
+{
+    MD4Context context;
+    md4ResetContext(&context);
+    return context;
+}
+
+void md4ResetContext(MD4Context* context)
+{
+    with (context)
+    {
+        hash[0] = 0x67452301;
+        hash[1] = 0xefcdab89;
+        hash[2] = 0x98badcfe;
+        hash[3] = 0x10325476;
+        byteCount = 0;
+    }
+}
+
+void md4Update(MD4Context* context, scope const(ubyte)[] data)
+{
+    version(DebugMD4)
+    {
+        import std.stdio;
+        import std.digest : toHexString, LetterCase;
+        writefln(`Updating with "%s" (%s)`, 
+            cast(const(char)[]) data,
+            data.toHexString!(LetterCase.lower));
+    }
+    const currentByteIndex   = cast(size_t)(context.byteCount & (context.block.sizeof - 1));
+	const availableByteCount = context.block.sizeof - currentByteIndex;
+    ubyte[] blockBytes       = cast(ubyte[]) context.block[];
+
+    context.byteCount += data.length;
+
+	if (availableByteCount > data.length)
+    {
+        blockBytes[currentByteIndex .. currentByteIndex + data.length] = data[];
+		return;
+	}
+
+    blockBytes[currentByteIndex .. $] = data[0 .. availableByteCount];
+	md4TransformWithLittleEndianConversion(context);
+    data = data[availableByteCount .. $];
+    
+    while (data.length >= context.block.sizeof)
+    {
+        blockBytes[] = data[0 .. context.block.sizeof];
+		md4TransformWithLittleEndianConversion(context);
+        data = data[context.block.sizeof .. $];
+    }
+
+    blockBytes[0 .. data.length] = data[];
+}
+
+ubyte[MD4Context.hash.sizeof] md4Final(MD4Context* context)
+{
+    // Two cases:
+    // if (stuff.length + 1 < until_the_last_two_bytes)
+    //      MD4([ ...stuff, 0x80, ...0, byteCount[0], byteCount[1] ])
+    // else // 
+    //      MD4([ ...stuff, 0x80, ...0])
+    ///     MD4([ ...0, byteCount[0], byteCount[1]]) 
+
+    scope(exit)
+        context.hash[] = 0;
+
+    const lastTwoWordsIndex = context.block.sizeof - (uint[2]).sizeof;
+    // The padding is a 0x80 followed by zeros.
+    const paddingStartIndex = context.byteCount & (context.block.sizeof - 1);
+    const zerosStartIndex   = paddingStartIndex + 1;
+    ubyte[] blockBytes      = cast(ubyte[]) context.block[];
+
+    blockBytes[paddingStartIndex] = 0x80;
+
+    // the byte count (the last 8 bytes) does not fit
+    if (paddingStartIndex >= lastTwoWordsIndex)
+    {
+        blockBytes[zerosStartIndex .. $] = 0;
+        
+        // do md4
+		md4TransformWithLittleEndianConversion(context);
+
+        blockBytes[0 .. lastTwoWordsIndex] = 0;
+    }
+
+    // the byte count fits
+    else // if (zerosStartIndex <= lastTwoBytesIndex)
+    {
+        blockBytes[zerosStartIndex .. lastTwoWordsIndex] = 0;
+    }
+
+    // do md4
+    context.block[14] = cast(uint) (context.byteCount << 3);
+    context.block[15] = cast(uint) (context.byteCount >> 29);
+
+    littleEndianToNativeAll(context.block[0 .. $ - 2]);
+	md4Transform(context.hash, context.block);
+
+    return cast(ubyte[context.hash.sizeof]) context.hash;
+}
+
+private void md4Transform(ref uint[4] hash, in uint[16] state)
 {
 	uint a = hash[0];
 	uint b = hash[1];
@@ -45,6 +170,11 @@ static void md4Transform(ref uint[4] hash, in uint[16] state)
             counter++;
         }
         doDebug();
+    }
+
+    uint leftShiftRotate(uint x, uint s)
+    {
+        return (x << s) | (x >> (32 - s));
     }
 
     {
@@ -123,148 +253,16 @@ static void md4Transform(ref uint[4] hash, in uint[16] state)
 	hash[3] += d;
 }
 
-import std.bitmanip : littleEndianToNative, nativeToLittleEndian;
 
-void littleEndianToNativeAll(uint[] arr)
+private void littleEndianToNativeAll(uint[] arr)
 {
+    import std.bitmanip : littleEndianToNative;
     foreach (ref ubyte[4] b; cast(ubyte[4][]) arr)
         *(cast(uint*)&b) = littleEndianToNative!uint(b);
 }
 
-void nativeToLittleEndianAll(uint[] arr)
-{
-    foreach (ref uint b; arr)
-        (cast(ubyte*)&b)[0 .. 4] = nativeToLittleEndian(b);
-}
-
-void md4TransformWithLittleEndianConversion(MD4Context* context)
+private void md4TransformWithLittleEndianConversion(MD4Context* context)
 {
     littleEndianToNativeAll(context.block[]);
 	md4Transform(context.hash, context.block);
-}
-
-MD4Context md4CreateContext()
-{
-    MD4Context context;
-    with (context)
-    {
-        hash[0] = 0x67452301;
-        hash[1] = 0xefcdab89;
-        hash[2] = 0x98badcfe;
-        hash[3] = 0x10325476;
-        byteCount = 0;
-    }
-    return context;
-}
-
-void md4Update(MD4Context* context, scope const(ubyte)[] data)
-{
-    version(DebugMD4)
-    {
-        import std.stdio;
-        import std.digest : toHexString, LetterCase;
-        writefln(`Updating with "%s" (%s)`, 
-            cast(const(char)[]) data,
-            data.toHexString!(LetterCase.lower));
-    }
-    const currentByteIndex   = context.byteCount & (context.block.sizeof - 1);
-	const availableByteCount = context.block.sizeof - currentByteIndex;
-    ubyte[] blockBytes       = cast(ubyte[]) context.block[];
-
-    context.byteCount += data.length;
-
-	if (availableByteCount > data.length)
-    {
-        blockBytes[currentByteIndex .. currentByteIndex + data.length] = data[];
-		return;
-	}
-
-    blockBytes[currentByteIndex .. $] = data[0 .. availableByteCount];
-	md4TransformWithLittleEndianConversion(context);
-    data = data[availableByteCount .. $];
-    
-    while (data.length >= context.block.sizeof)
-    {
-        blockBytes[] = data[0 .. context.block.sizeof];
-		md4TransformWithLittleEndianConversion(context);
-        data = data[context.block.sizeof .. $];
-    }
-
-    blockBytes[0 .. data.length] = data[];
-}
-
-
-ubyte[MD4Context.hash.sizeof] md4Final(MD4Context* context)
-{
-    // Two cases:
-    // if (stuff.length + 1 < until_the_last_two_bytes)
-    //      MD4([ ...stuff, 0x80, ...0, byteCount[0], byteCount[1] ])
-    // else // 
-    //      MD4([ ...stuff, 0x80, ...0])
-    ///     MD4([ ...0, byteCount[0], byteCount[1]]) 
-
-    scope(exit)
-        context.hash[] = 0;
-
-    const lastTwoWordsIndex = context.block.sizeof - (uint[2]).sizeof;
-    // The padding is a 0x80 followed by zeros.
-    const paddingStartIndex = context.byteCount & (context.block.sizeof - 1);
-    const zerosStartIndex   = paddingStartIndex + 1;
-    ubyte[] blockBytes      = cast(ubyte[]) context.block[];
-
-    blockBytes[paddingStartIndex] = 0x80;
-
-    // the byte count (the last 8 bytes) does not fit
-    if (paddingStartIndex >= lastTwoWordsIndex)
-    {
-        blockBytes[zerosStartIndex .. $] = 0;
-        
-        // do md4
-		md4TransformWithLittleEndianConversion(context);
-
-        blockBytes[0 .. lastTwoWordsIndex] = 0;
-    }
-
-    // the byte count fits
-    else // if (zerosStartIndex <= lastTwoBytesIndex)
-    {
-        blockBytes[zerosStartIndex .. lastTwoWordsIndex] = 0;
-    }
-
-    // do md4
-    context.block[14] = cast(uint) (context.byteCount << 3);
-    context.block[15] = cast(uint) (context.byteCount >> 29);
-
-    littleEndianToNativeAll(context.block[0 .. $ - 2]);
-	md4Transform(context.hash, context.block);
-
-    // The conversion back literally doesn't matter.
-    // nativeToLittleEndianAll(context.block[]);
-
-    return cast(ubyte[context.hash.sizeof]) context.hash;
-}
-
-ubyte[MD4Context.hash.sizeof] md4Of(scope const(ubyte)[] input)
-{
-    MD4Context context = md4CreateContext();
-    md4Update(&context, input);
-    return md4Final(&context);
-}
-
-unittest
-{
-    static string md4(string input)
-    {
-        import std.digest : toHexString, LetterCase;
-        import std.string : representation;
-        return md4Of(input.representation).toHexString!(LetterCase.lower).idup;
-    }
-
-    assert(md4("") == "31d6cfe0d16ae931b73c59d7e0c089c0");
-    assert(md4("a") == "bde52cb31de33e46245e05fbdbd6fb24");
-    assert(md4("abc") == "a448017aaf21d8525fc10ae87aa6729d");
-    assert(md4("message digest") == "d9130a8164549fe818874806e1c7014b");
-    assert(md4("abcdefghijklmnopqrstuvwxyz") == "d79e1c308aa5bbcdeea8ed63df412da9");
-    assert(md4("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") == "043f8582f241db351ce627e153e7f0e4");
-    assert(md4("12345678901234567890123456789012345678901234567890123456789012345678901234567890") == "e33b4ddc9c38f2199c3e7b164fcc0536");
 }
