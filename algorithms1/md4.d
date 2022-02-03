@@ -138,16 +138,23 @@ ubyte[MD4Context.hash.sizeof] md4Final(MD4Context* context)
 
 private void md4Transform(ref uint[4] hash, in uint[16] state)
 {
-    uint a = hash[0];
-    uint b = hash[1];
-    uint c = hash[2];
-    uint d = hash[3];
+    uint[4] temp = hash;
+    ref uint a() { return temp[0]; }
+    ref uint b() { return temp[1]; }
+    ref uint c() { return temp[2]; }
+    ref uint d() { return temp[3]; }
+
+    static uint leftShiftRotate(uint x, uint s)
+    {
+        return (x << s) | (x >> (32 - s));
+    }
 
     version(DebugMD4)
     {
         import std.stdio;
         import std.digest : toHexString, LetterCase;
         import std.algorithm;
+        import std.conv;
         import std.range;
 
         writeln("Transform state vector:\n", 
@@ -160,97 +167,108 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         scope(exit)
             writeln("Hash after transform: ", (cast(ubyte[]) hash[]).toHexString!(LetterCase.lower), "\n");
 
-        writefln("%-8s %-8s %-8s %-8s %-8s", "counter", "a", "b", "c", "d");
+        enum bool hex = false; // false means binary 
+        enum numCharsPerUint = hex ? 8 : 8 * 4;
+        {
+            enum headerFormatString = "%-8s " ~ text("%-", numCharsPerUint, "s").repeat(4).join(" ");
+            writefln(headerFormatString, "counter", "a", "b", "c", "d");
+        }
         int counter = 0;
-
         
         void doDebug()
         {
-            writefln("%-8d %08x %08x %08x %08x", counter, a, b, c, d);
+            enum roundFormatString = "%-8d " ~ text("%0", numCharsPerUint, hex ? "x" : "b").repeat(4).join(" ");
+            import std.bitmanip : nativeToLittleEndian;
+            static uint s(uint a) 
+            {
+                // auto t = nativeToLittleEndian(a);
+                // return *cast(uint*)&t;
+                return a;
+            }
+            writefln(roundFormatString, counter, s(a), s(b), s(c), s(d));
             counter++;
         }
         doDebug();
     }
 
-    uint leftShiftRotate(uint x, uint s)
-    {
-        return (x << s) | (x >> (32 - s));
-    }
+    enum size_t[4][4] indexPermutationForInnerIteration = 
+    [
+        [ 0, 1, 2, 3 ],
+        [ 3, 0, 1, 2 ],
+        [ 2, 3, 0, 1 ],
+        [ 1, 2, 3, 0 ],
+    ];
 
+    enum size_t[4][3] constantStateOffsets = [
+        [ 0, 4, 8, 12 ],
+        [ 0, 1, 2, 3  ],
+        [ 0, 2, 1, 3  ],
+    ];
+
+    enum size_t[4][3] variableStateOffsets = [
+        [ 0, 1, 2, 3  ],
+        [ 0, 4, 8, 12 ],
+        [ 0, 8, 4, 12 ],
+    ];
+
+    enum uint[4][3] shifts = [
+        [ 3, 7, 11, 19 ],
+        [ 3, 5, 9,  13 ],
+        [ 3, 9, 11, 15 ],
+    ];
+
+    static uint FF(uint a, uint b, uint c, uint d, uint k, uint s)
     {
-        uint F(uint x, uint y, uint z)
+        static uint F(uint x, uint y, uint z)
         {
             return (x & y) | ((~x) & z);
         }
-        void FF(ref uint a, uint b, uint c, uint d, uint k, uint s)
-        {
-            a = leftShiftRotate(a + F(b, c, d) + k, s);
-            version(DebugMD4)
-                doDebug();
-        }
-        static foreach (iterCount; [cast(size_t) 0, 4, 8, 12])
-        {
-            FF(a, b, c, d, state[0 + iterCount], 3);
-            FF(d, a, b, c, state[1 + iterCount], 7);
-            FF(c, d, a, b, state[2 + iterCount], 11);
-            FF(b, c, d, a, state[3 + iterCount], 19);
-        }
-
-        // static foreach (iterCount; [cast(size_t) 0, 4, 8, 12])
-        // static foreach (index, shift; [cast(uint) 3, 7, 11, 19])
-        // {
-        //     FF(
-        //         v[index % 4],
-        //         v[(index + 1) % 4],
-        //         v[(index + 2) % 4],
-        //         v[(index + 3) % 4],
-        //         state[index + iterCount],
-        //         shift);
-        // }
+        return leftShiftRotate(a + F(b, c, d) + k, s);
     }
+
+    static uint GG(uint a, uint b, uint c, uint d, uint k, uint s)
     {
-        uint G(uint x, uint y, uint z)
+        static uint G(uint x, uint y, uint z)
         {
             return (x & y) | (x & z) | (y & z);
         }
-        void GG(ref uint a, uint b, uint c, uint d, uint k, uint s)
-        {
-            a = leftShiftRotate(a + G(b, c, d) + k + cast(uint) 0x5A827999, s);
-            version(DebugMD4)
-                doDebug();
-        }
-        static foreach (iterCount; 0 .. 4)
-        {
-            GG(a, b, c, d, state[0  + iterCount], 3);
-            GG(d, a, b, c, state[4  + iterCount], 5);
-            GG(c, d, a, b, state[8  + iterCount], 9);
-            GG(b, c, d, a, state[12 + iterCount], 13);
-        }
+        return leftShiftRotate(a + G(b, c, d) + k + cast(uint) 0x5A827999, s);
     }
+
+    static uint HH(uint a, uint b, uint c, uint d, uint k, uint s)
     {
-        uint H(uint x, uint y, uint z)
+        static uint H(uint x, uint y, uint z)
         {
             return x ^ y ^ z;
         }
-        void HH(ref uint a, uint b, uint c, uint d, uint k, uint s)
+        return leftShiftRotate(a + H(b, c, d) + k + cast(uint) 0x6ED9EBA1, s);
+    }
+
+    import std.meta : AliasSeq;
+    alias functions = AliasSeq!(FF, GG, HH);
+
+    // Why do this? because then logging debug messages is way easier.
+    static foreach (roundIndex; 0 .. 3)
+    {
+        static foreach (outerIterationIndex, constantStateOffset; constantStateOffsets[roundIndex])
         {
-            a = leftShiftRotate(a + H(b, c, d) + k + cast(uint) 0x6ED9EBA1, s);
-            version(DebugMD4)
-                doDebug();
-        }
-        static foreach (iterCount; [cast(size_t) 0, 2, 1, 3])
-        {
-            HH(a, b, c, d, state[0  + iterCount], 3);
-            HH(d, a, b, c, state[8  + iterCount], 9);
-            HH(c, d, a, b, state[4  + iterCount], 11);
-            HH(b, c, d, a, state[12 + iterCount], 15);
+            static foreach (innerIterationIndex, variableStateOffset; variableStateOffsets[roundIndex])
+            {{
+                enum perm  = indexPermutationForInnerIteration[innerIterationIndex];
+                enum shift = shifts[roundIndex][innerIterationIndex];
+
+                temp[perm[0]] = functions[roundIndex](
+                    temp[perm[0]], temp[perm[1]], temp[perm[2]], temp[perm[3]],
+                    state[constantStateOffset + variableStateOffset],
+                    shift);
+
+                version(DebugMD4)
+                    doDebug();
+            }}
         }
     }
 
-    hash[0] += a;
-    hash[1] += b;
-    hash[2] += c;
-    hash[3] += d;
+    hash[] += temp[];
 }
 
 
