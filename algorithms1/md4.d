@@ -193,7 +193,8 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         enum string singleUintFormat = "%08b".repeat(4).join(`\\:`);
         static string formatUint(uint num)
         {
-            ubyte[4] bytes = *cast(ubyte[4]*)&num;
+            import std.bitmanip : nativeToLittleEndian;
+            ubyte[4] bytes = nativeToLittleEndian(num);
             import std.format;
             return format(singleUintFormat, bytes[3], bytes[2], bytes[1], bytes[0]);
         }
