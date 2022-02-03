@@ -156,13 +156,14 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         import std.algorithm;
         import std.conv;
         import std.range;
+        import std.format : format;
 
-        writeln("Transform state vector:\n", 
-            state[].map!(
-                a => (cast(ubyte[])(&a)[0 .. 1])
-                    .toHexString!(LetterCase.lower)
-                    .idup)
-            .joiner("\n"));
+        // writeln("Transform state vector:\n", 
+        //     state[].map!(
+        //         a => (cast(ubyte[])(&a)[0 .. 1])
+        //             .toHexString!(LetterCase.lower)
+        //             .idup)
+        //     .joiner("\n"));
         writeln("Hash before transform: ", (cast(ubyte[]) hash[]).toHexString!(LetterCase.lower));
         scope(exit)
             writeln("Hash after transform: ", (cast(ubyte[]) hash[]).toHexString!(LetterCase.lower), "\n");
@@ -171,7 +172,7 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         enum numCharsPerUint = hex ? 8 : 8 * 4;
         {
             enum headerFormatString = "%-8s " ~ text("%-", numCharsPerUint, "s").repeat(4).join(" ");
-            writefln(headerFormatString, "counter", "a", "b", "c", "d");
+            // writefln(headerFormatString, "counter", "a", "b", "c", "d");
         }
         int counter = 0;
         
@@ -188,7 +189,30 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
             writefln(roundFormatString, counter, s(a), s(b), s(c), s(d));
             counter++;
         }
-        doDebug();
+
+        enum string singleUintFormat = "%08b".repeat(4).join(`\\:`);
+        static string formatUint(uint num)
+        {
+            ubyte[4] bytes = *cast(ubyte[4]*)&num;
+            import std.format;
+            return format(singleUintFormat, bytes[3], bytes[2], bytes[1], bytes[0]);
+        }
+        string formatTemp(size_t index)
+        {
+            return formatUint(temp[index]);
+        }
+
+        {
+            writeln();
+            enum string arrowFormat = `%s \rightarrow %s`;
+            enum string formatString = `$ ` ~ arrowFormat.repeat(4).join(`; \\\\` ~ "\n") ~ `. $`;
+            writefln(formatString,
+                "A", formatTemp(0),
+                "B", formatTemp(1),
+                "C", formatTemp(2),
+                "D", formatTemp(3));
+            writeln();
+        }
     }
 
     enum size_t[4][4] indexPermutationForInnerIteration = 
@@ -217,39 +241,65 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         [ 3, 9, 11, 15 ],
     ];
 
-    static uint FF(uint a, uint b, uint c, uint d, uint k, uint s)
+    version (DebugMD4)
     {
-        static uint F(uint x, uint y, uint z)
+        static string latexFormatFunctionInvocation(size_t roundIndex, string x, string y, string z)
         {
-            return (x & y) | ((~x) & z);
+            // the hax omg
+            // immutable string[3] formulas = [
+            //     `(%1$s \land %2$s) \lor %4$s \lor (\lnot %1$s \land %3$s)`,
+            //     `(%1$s \land %2$s) \lor %4$s \lor (%1$s \and %3$s) \lor %4$s \lor (%2$s \land %3$s)`,
+            //     `%1$s \oplus %2$s \oplus %3$s %4$s`,
+            // ];
+            // return formulas[roundIndex].format(x, y, z, lastArg);
+
+            bool shouldBreak = (x.length + y.length + z.length > 30 && roundIndex != 2);
+            switch (roundIndex)
+            {
+                case 0:
+                    return text(`(`, x, ` \land `, y, `) %s (\lnot `, x, ` \land `, z, `)`)
+                        .format(shouldBreak ?  `\lor \\\\ \lor ` : `\lor`); 
+
+                case 1:
+                    return text(`(`, x, ` \land `, y, `) %1$s (`, x, ` \land `, z, `) %1$s (`, y, ` \land `, z, `)`)
+                        .format(shouldBreak ?  `\lor \\\\ \lor ` : `\lor`); 
+                case 2:
+                    return `%s \oplus %s \oplus %s`.format(x, y, z);
+
+                default: assert(0);
+            }
         }
-        return leftShiftRotate(a + F(b, c, d) + k, s);
     }
 
-    static uint GG(uint a, uint b, uint c, uint d, uint k, uint s)
+    static uint F(uint x, uint y, uint z)
     {
-        static uint G(uint x, uint y, uint z)
-        {
-            return (x & y) | (x & z) | (y & z);
-        }
-        return leftShiftRotate(a + G(b, c, d) + k + cast(uint) 0x5A827999, s);
+        return (x & y) | ((~x) & z);
     }
-
-    static uint HH(uint a, uint b, uint c, uint d, uint k, uint s)
+    static uint G(uint x, uint y, uint z)
     {
-        static uint H(uint x, uint y, uint z)
-        {
-            return x ^ y ^ z;
-        }
-        return leftShiftRotate(a + H(b, c, d) + k + cast(uint) 0x6ED9EBA1, s);
+        return (x & y) | (x & z) | (y & z);
     }
-
+    static uint H(uint x, uint y, uint z)
+    {
+        return x ^ y ^ z;
+    }
     import std.meta : AliasSeq;
-    alias functions = AliasSeq!(FF, GG, HH);
+    alias functions = AliasSeq!(F, G, H);
+
+    enum uint[3] M = [0, 0x5A827999, 0x6ED9EBA1];
+
 
     // Why do this? because then logging debug messages is way easier.
     static foreach (roundIndex; 0 .. 3)
     {
+        version(DebugMD4)
+        {
+            writefln("Starting round $ %d $. $ %s(x, y, z) = %s $.\n",
+                roundIndex,
+                __traits(identifier, functions[roundIndex]),
+                latexFormatFunctionInvocation(roundIndex, "x", "y", "z"));
+        }
+
         static foreach (outerIterationIndex, constantStateOffset; constantStateOffsets[roundIndex])
         {
             static foreach (innerIterationIndex, variableStateOffset; variableStateOffsets[roundIndex])
@@ -257,13 +307,77 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
                 enum perm  = indexPermutationForInnerIteration[innerIterationIndex];
                 enum shift = shifts[roundIndex][innerIterationIndex];
 
-                temp[perm[0]] = functions[roundIndex](
-                    temp[perm[0]], temp[perm[1]], temp[perm[2]], temp[perm[3]],
-                    state[constantStateOffset + variableStateOffset],
-                    shift);
+                uint k          = state[constantStateOffset + variableStateOffset];
+                uint funcResult = functions[roundIndex](temp[perm[1]], temp[perm[2]], temp[perm[3]]);
+                uint sumResult  = temp[perm[0]] + funcResult + k + M[roundIndex];
+                uint rotated    = leftShiftRotate(sumResult, shift);
 
                 version(DebugMD4)
-                    doDebug();
+                // static if (roundIndex == 2)
+                {
+                    writeln();
+                    writefln("Global iteration $ %d / 48 $, Round iteration $ %d / 16 $.",
+                        ++counter,
+                        outerIterationIndex * 4 + innerIterationIndex + 1);
+                    writeln();
+
+                    static string getName(size_t index)
+                    {
+                        return ["A", "B", "C", "D"][index];
+                    }
+
+                    {
+                        enum string formatString = `1\. $ %s = `
+                            ~ "%s"
+                            ~ ` = \\\\ = `
+                            ~ "%s"
+                            ~ ` = \\\\ = %s. $` ~ "\n";
+
+                        writefln(formatString,
+                            __traits(identifier, functions[roundIndex]),
+                            latexFormatFunctionInvocation(roundIndex, getName(1), getName(2), getName(3)),
+                            latexFormatFunctionInvocation(roundIndex, formatTemp(perm[1]), formatTemp(perm[2]), formatTemp(perm[3])),
+                            formatUint(funcResult));
+                    }
+                    {
+                        static string mod(string f)
+                        {
+                            return `(` ~ f ~ `) \mod 2 ^ {32}`;
+                        }
+                        enum string formatString = `2\. $ `
+                            ~ mod(`%s + %s + k + M`)
+                            ~ ` = \\\\ =`
+                            ~ mod(`%s + %s + \\\\ + \\: %s + %s`)
+                            ~ ` = \\\\ =`
+                            ~ mod(`%d + %d + %d + %d`)
+                            ~ ` = \\\\ = %d (%s). $` ~ "\n";
+                            
+                        writefln(formatString,
+                            getName(0), __traits(identifier, functions[roundIndex]),
+                            formatTemp(perm[0]), formatUint(funcResult), formatUint(k), formatUint(M[roundIndex]),
+                            temp[perm[0]], funcResult, k, M[roundIndex],
+                            sumResult, formatUint(sumResult));
+                    }
+                    {
+                        writefln(`3\. $ %s \lll %d = %s. $` ~ "\n",
+                            formatUint(sumResult),
+                            shift,
+                            formatUint(rotated));
+                    }
+                    {
+                        enum string reorderFormat = `%s \rightarrow %s \rightarrow %s`;
+                        enum string allReorderFormat = reorderFormat.repeat(4).join(`; \\\\` ~ "\n");
+                        writefln(`4\. $ ` ~ allReorderFormat ~ ". $\n",
+                            "D", "A", formatTemp(perm[3]),
+                            "A", "B", formatUint(rotated),
+                            "B", "C", formatTemp(perm[1]),
+                            "C", "D", formatTemp(perm[2]));
+                    }
+                    writeln();
+                    writeln();
+                }
+
+                temp[perm[0]] = rotated;
             }}
         }
     }
