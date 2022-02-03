@@ -1,12 +1,13 @@
 // To compile, do `dmd md4.d` (optionally with the -m64 flag).
 // To unittest, compile with the flags `-main -unittest`.
 // To debug, compile with the flag `-version=DebugMD4`.
+module md4;
 
 struct MD4Context
 {
-	uint[4] hash;
-	uint[16] block;
-	ulong byteCount;
+    uint[4] hash;
+    uint[16] block;
+    ulong byteCount;
 }
 
 ubyte[MD4Context.hash.sizeof] md4Of(scope const(ubyte)[] input)
@@ -63,25 +64,25 @@ void md4Update(MD4Context* context, scope const(ubyte)[] data)
             data.toHexString!(LetterCase.lower));
     }
     const currentByteIndex   = cast(size_t)(context.byteCount & (context.block.sizeof - 1));
-	const availableByteCount = context.block.sizeof - currentByteIndex;
+    const availableByteCount = context.block.sizeof - currentByteIndex;
     ubyte[] blockBytes       = cast(ubyte[]) context.block[];
 
     context.byteCount += data.length;
 
-	if (availableByteCount > data.length)
+    if (availableByteCount > data.length)
     {
         blockBytes[currentByteIndex .. currentByteIndex + data.length] = data[];
-		return;
-	}
+        return;
+    }
 
     blockBytes[currentByteIndex .. $] = data[0 .. availableByteCount];
-	md4TransformWithLittleEndianConversion(context);
+    md4TransformWithLittleEndianConversion(context);
     data = data[availableByteCount .. $];
     
     while (data.length >= context.block.sizeof)
     {
         blockBytes[] = data[0 .. context.block.sizeof];
-		md4TransformWithLittleEndianConversion(context);
+        md4TransformWithLittleEndianConversion(context);
         data = data[context.block.sizeof .. $];
     }
 
@@ -114,7 +115,7 @@ ubyte[MD4Context.hash.sizeof] md4Final(MD4Context* context)
         blockBytes[zerosStartIndex .. $] = 0;
         
         // do md4
-		md4TransformWithLittleEndianConversion(context);
+        md4TransformWithLittleEndianConversion(context);
 
         blockBytes[0 .. lastTwoWordsIndex] = 0;
     }
@@ -130,17 +131,17 @@ ubyte[MD4Context.hash.sizeof] md4Final(MD4Context* context)
     context.block[15] = cast(uint) (context.byteCount >> 29);
 
     littleEndianToNativeAll(context.block[0 .. $ - 2]);
-	md4Transform(context.hash, context.block);
+    md4Transform(context.hash, context.block);
 
     return cast(ubyte[context.hash.sizeof]) context.hash;
 }
 
 private void md4Transform(ref uint[4] hash, in uint[16] state)
 {
-	uint a = hash[0];
-	uint b = hash[1];
-	uint c = hash[2];
-	uint d = hash[3];
+    uint a = hash[0];
+    uint b = hash[1];
+    uint c = hash[2];
+    uint d = hash[3];
 
     version(DebugMD4)
     {
@@ -246,10 +247,10 @@ private void md4Transform(ref uint[4] hash, in uint[16] state)
         }
     }
 
-	hash[0] += a;
-	hash[1] += b;
-	hash[2] += c;
-	hash[3] += d;
+    hash[0] += a;
+    hash[1] += b;
+    hash[2] += c;
+    hash[3] += d;
 }
 
 
@@ -263,5 +264,5 @@ private void littleEndianToNativeAll(uint[] arr)
 private void md4TransformWithLittleEndianConversion(MD4Context* context)
 {
     littleEndianToNativeAll(context.block[]);
-	md4Transform(context.hash, context.block);
+    md4Transform(context.hash, context.block);
 }
